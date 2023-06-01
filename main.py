@@ -1,3 +1,5 @@
+import datetime
+import itertools
 import json
 import pathlib
 
@@ -7,7 +9,10 @@ data_dir = pathlib.Path(__file__).parent / 'data'
 data_dir.mkdir(exist_ok=True, parents=True)
 
 
-def run(playwright):
+all_data = []
+
+
+def run(playwright, operation, level):
     browser = playwright.chromium.launch()
     context = browser.new_context()
     page = context.new_page()
@@ -21,8 +26,10 @@ def run(playwright):
             {
                 'method': request.method,
                 'url': request.url,
-                'total_request_time_in_ms': request.timing['responseEnd']
+                'total_response_time_in_ms': request.timing['responseEnd']
                 - request.timing['requestStart'],
+                'response_end': request.timing['responseEnd'],
+                'request_start': request.timing['requestStart'],
             }
         )
         if 'storage.googleapis.com/carbonplan-maps/v2/demo' in request.url
@@ -49,8 +56,13 @@ def run(playwright):
     """
     )
 
-    # Zooming out to one level
-    page.keyboard.press('=')  # (-) zoom out | (=) zoom in
+    # Perform operation
+    for _ in range(level):
+        if operation == 'zoom_in':
+            page.keyboard.press('=')
+        elif operation == 'zoom_out':
+            page.keyboard.press('-')
+        # Add more elif conditions here for other operations
 
     page.wait_for_load_state('networkidle')
 
@@ -64,27 +76,33 @@ def run(playwright):
     """
     )
 
-    # page.screenshot(path='example.png')
     browser.close()
 
     data = {
         'average_fps': round(fps, 0),
         'request_data': request_data,
-        'operation': 'zooming',
-        'zoom_level': 1,
+        'operation': operation,
+        'zoom_level': level,
     }
 
-    print(f"Average FPS during {data['operation']} operation: {data['average_fps']}")
-    print(f'Zoom level: {data["zoom_level"]}')
+    all_data.append(data)
+
+    print(
+        f"Average FPS during {data['operation']} operation at level {data['zoom_level']}: {data['average_fps']}"
+    )
     print(f"Total number of requests: {len(data['request_data'])}")
     print(
-        f"Average request time for each tile: {sum(x['total_request_time_in_ms'] for x in data['request_data']) / len(data['request_data']):.2f} ms"
+        f"Average response time for each tile: {sum(x['total_response_time_in_ms'] for x in data['request_data']) / len(data['request_data']):.2f} ms"
     )
-
-    # Write the data to a json file
-    with open(data_dir / 'data.json', 'w') as outfile:
-        json.dump(data, outfile, indent=4, sort_keys=True)
 
 
 with sync_playwright() as playwright:
-    run(playwright)
+    operations = ['zoom_in', 'zoom_out']  # Add more operations here
+    levels = [1, 2, 3]  # Add more levels here
+    for operation, level in itertools.product(operations, levels):
+        run(playwright, operation, level)
+
+    # Write the data to a json file
+    now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
+    with open(data_dir / f'data_{now}.json', 'w') as outfile:
+        json.dump(all_data, outfile, indent=4, sort_keys=True)
