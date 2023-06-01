@@ -1,0 +1,13 @@
+name: benchmark-maps
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.10
+  - pandas
+  - pip
+  - pytest
+  - requests
+  - typing-extensions
+  - pip:
+      - pytest-playwright
