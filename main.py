@@ -87,30 +87,33 @@ def run(playwright):
 """
     )
 
-    # Wait until no paint events have occurred for 500 ms
+    # Wait until no paint events have occurred for the duration of the threshold
     page.wait_for_function(
         f"""
         () => {{
             const timeSinceLastPaint = performance.now() - window._lastPaint;
-            return timeSinceLastPaint > {time_since_last_paint_threshold};  // Change this threshold as needed
+            return timeSinceLastPaint > {time_since_last_paint_threshold};  // If time since last paint is more than threshold
         }}
 
     """
     )
 
-    # Cancel the frame counting and calculate FPS and frame durations
+    # Cancel the frame counting and calculate FPS, total duration and frame durations
     durations = page.evaluate(
         """
         cancelAnimationFrame(window._rafId);
-        const durationInSeconds = (performance.now() - window._timerStart) / 1000;
+        const timerEnd = performance.now();
+        const durationInSeconds = (timerEnd - window._timerStart) / 1000;
         const fps = window._frameCounter / durationInSeconds;
         const frameDurations = window._frameDurations;
-        [fps, frameDurations];
+        [fps, frameDurations, window._timerStart, timerEnd];
     """
     )
 
     fps = durations[0]
     frame_durations = durations[1]
+    timer_start = durations[2]
+    timer_end = durations[3]
 
     browser.close()
 
@@ -120,6 +123,9 @@ def run(playwright):
         'average_fps': round(fps, 0),
         'frame_durations_in_ms': frame_durations,
         'request_data': request_data,
+        'timer_start': timer_start,
+        'timer_end': timer_end,
+        'total_duration_in_ms': timer_end - timer_start,
     }
 
     all_data.append(data)
@@ -139,6 +145,8 @@ def run(playwright):
     print(
         f"Average response time for each tile: {sum(x['total_response_time_in_ms'] for x in data['request_data']) / len(data['request_data']):.2f} ms"
     )
+    print(f'Total duration: {data["total_duration_in_ms"]:.2f} ms')
+    print(f'Time since last paint threshold: {time_since_last_paint_threshold} ms')
 
 
 with sync_playwright() as playwright:
