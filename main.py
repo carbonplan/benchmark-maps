@@ -45,21 +45,6 @@ def run(playwright):
     page.click('.mapboxgl-canvas')
 
     # Start the timer and initialize frame counter in the page
-    page.evaluate(
-        """
-        window._frameCounter = 0;
-        window._timerStart = performance.now();
-        window._frameDurations = [];
-        window._prevFrameTime = performance.now();
-        window._rafId = requestAnimationFrame(function countFrames() {
-            const currentTime = performance.now();
-            window._frameDurations.push(currentTime - window._prevFrameTime);
-            window._prevFrameTime = currentTime;
-            window._frameCounter++;
-            window._rafId = requestAnimationFrame(countFrames);
-        });
-    """
-    )
 
     # Create the PerformanceObserver in the page's context
     page.evaluate(
@@ -76,13 +61,40 @@ def run(playwright):
     """
     )
 
+    # Start the timer and initialize frame counter in the page
+    # this measures the frame rate and frame durations only during actual content changes,
+    # by counting frames when a paint event has occurred.
+    # the following approach involves storing the time of the last paint event and
+    # only counting a frame if the time since the last paint event is less than a certain threshold (e.g., 500 ms)
+    # the _frameCounter and _frameDurations will only be updated when the page is actively being painted.
+    time_since_last_paint_threshold = 500  # change this threshold as needed (in ms)
+    page.evaluate(
+        f"""
+    window._frameCounter = 0;
+    window._timerStart = performance.now();
+    window._frameDurations = [];
+    window._prevFrameTime = performance.now();
+    window._rafId = requestAnimationFrame(function countFrames() {{
+        const currentTime = performance.now();
+        const timeSinceLastPaint = currentTime - window._lastPaint;
+        if (timeSinceLastPaint < {time_since_last_paint_threshold}) {{  // Change this threshold as needed
+            window._frameDurations.push(currentTime - window._prevFrameTime);
+            window._frameCounter++;
+        }}
+        window._prevFrameTime = currentTime;
+        window._rafId = requestAnimationFrame(countFrames);
+    }});
+"""
+    )
+
     # Wait until no paint events have occurred for 500 ms
     page.wait_for_function(
-        """
-        () => {
+        f"""
+        () => {{
             const timeSinceLastPaint = performance.now() - window._lastPaint;
-            return timeSinceLastPaint > 500;  // Change this threshold as needed
-        }
+            return timeSinceLastPaint > {time_since_last_paint_threshold};  // Change this threshold as needed
+        }}
+
     """
     )
 
