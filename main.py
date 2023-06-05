@@ -61,17 +61,30 @@ def run(playwright):
     """
     )
 
-    # Wait for the FPS to become static.
-    # page.wait_for_function(
-    #     """
-    #     () => {
-    #         const durationInSeconds = (performance.now() - window._timerStart) / 1000;
-    #         const fps = window._frameCounter / durationInSeconds;
-    #         return fps < 0.1;  // Change this threshold as needed
-    #     }
-    #     """
-    # )
-    page.wait_for_load_state('networkidle')
+    # Create the PerformanceObserver in the page's context
+    page.evaluate(
+        """
+        window._lastPaint = performance.now();
+        window._perfObserver = new PerformanceObserver((list) => {
+            for (const entry of list.getEntries()) {
+                if (entry.entryType === 'paint') {
+                    window._lastPaint = performance.now();
+                }
+            }
+        });
+        window._perfObserver.observe({ entryTypes: ['paint'] });
+    """
+    )
+
+    # Wait until no paint events have occurred for 500 ms
+    page.wait_for_function(
+        """
+        () => {
+            const timeSinceLastPaint = performance.now() - window._lastPaint;
+            return timeSinceLastPaint > 500;  // Change this threshold as needed
+        }
+    """
+    )
 
     # Cancel the frame counting and calculate FPS and frame durations
     durations = page.evaluate(
