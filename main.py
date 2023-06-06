@@ -165,10 +165,9 @@ def main(*, runs: int, time_since_last_paint_threshold: int):
         total_response_times = []
 
         for data in all_data:
-            for request_data in data['request_data']:
-                total_response_time = request_data['total_response_time_in_ms']
-                total_response_times.append(total_response_time)
-
+            total_response_times.extend(
+                request_data['total_response_time_in_ms'] for request_data in data['request_data']
+            )
         average_request_duration = np.mean(total_response_times)
         median_request_duration = np.median(total_response_times)
         frame_duration_percentiles = np.percentile(total_response_times, [25, 50, 75, 90])

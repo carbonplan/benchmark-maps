@@ -35,4 +35,4 @@ jobs:
 
       - name: Run benchmarks
         run: |
-          python main.py
+          python main.py --runs 25 --time-since-last-paint-threshold 800
