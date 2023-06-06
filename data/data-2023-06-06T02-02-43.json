@@ -1,0 +1,1184 @@
+[
+    {
+        "average_fps": 37.0,
+        "frame_durations_in_ms": [
+            7.199999999953434,
+            16.100000000034925,
+            16.70000000001164,
+            16.599999999976717,
+            16.599999999976717,
+            16.900000000023283,
+            16.70000000001164,
+            16.599999999976717,
+            16.600000000034925,
+            16.899999999965075,
+            16.5,
+            16.600000000034925,
+            16.79999999998836,
+            16.899999999965075,
+            16.400000000023283,
+            16.599999999976717,
+            16.600000000034925,
+            16.70000000001164,
+            16.699999999953434,
+            16.5,
+            16.900000000023283,
+            16.79999999998836,
+            16.5,
+            16.70000000001164,
+            16.400000000023283,
+            16.899999999965075,
+            16.70000000001164,
+            16.70000000001164,
+            16.5,
+            16.70000000001164
+        ],
+        "request_data": [
+            {
+                "method": "GET",
+                "request_start": 18.721,
+                "response_end": 116.512,
+                "total_response_time_in_ms": 97.791,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/.zmetadata"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.249,
+                "response_end": 94.018,
+                "total_response_time_in_ms": 93.769,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/band/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.88,
+                "response_end": 103.795,
+                "total_response_time_in_ms": 102.915,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/month/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.182,
+                "response_end": 232.864,
+                "total_response_time_in_ms": 232.68200000000002,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.122,
+                "response_end": 318.211,
+                "total_response_time_in_ms": 318.089,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.119,
+                "response_end": 271.756,
+                "total_response_time_in_ms": 271.63699999999994,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.121,
+                "response_end": 294.328,
+                "total_response_time_in_ms": 294.207,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.3"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.134,
+                "response_end": 390.401,
+                "total_response_time_in_ms": 390.267,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.16,
+                "response_end": 381.316,
+                "total_response_time_in_ms": 381.15599999999995,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.3"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.118,
+                "response_end": 330.957,
+                "total_response_time_in_ms": 330.839,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.141,
+                "response_end": 200.634,
+                "total_response_time_in_ms": 200.493,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.0"
+            }
+        ],
+        "time_since_last_paint_threshold": 800,
+        "timer_end": 3946.100000000035,
+        "timer_start": 3136.600000000035,
+        "total_duration_in_ms": 809.5
+    },
+    {
+        "average_fps": 37.0,
+        "frame_durations_in_ms": [
+            10.300000000046566,
+            16.599999999976717,
+            16.70000000001164,
+            16.599999999976717,
+            17,
+            16.29999999998836,
+            18.400000000023283,
+            15,
+            16.70000000001164,
+            16.599999999976717,
+            16.70000000001164,
+            16.70000000001164,
+            16.70000000001164,
+            16.599999999976717,
+            16.70000000001164,
+            16.79999999998836,
+            16.599999999976717,
+            16.70000000001164,
+            16.600000000034925,
+            16.699999999953434,
+            16.600000000034925,
+            16.79999999998836,
+            16.5,
+            16.70000000001164,
+            16.599999999976717,
+            16.900000000023283,
+            16.5,
+            16.70000000001164,
+            16.599999999976717,
+            16.70000000001164
+        ],
+        "request_data": [
+            {
+                "method": "GET",
+                "request_start": 17.137,
+                "response_end": 96.586,
+                "total_response_time_in_ms": 79.449,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/.zmetadata"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.911,
+                "response_end": 159.03,
+                "total_response_time_in_ms": 158.119,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/month/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.285,
+                "response_end": 202.814,
+                "total_response_time_in_ms": 202.529,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/band/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.204,
+                "response_end": 216.725,
+                "total_response_time_in_ms": 216.521,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.137,
+                "response_end": 399.537,
+                "total_response_time_in_ms": 399.4,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.121,
+                "response_end": 303.833,
+                "total_response_time_in_ms": 303.71200000000005,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.3"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.121,
+                "response_end": 399.008,
+                "total_response_time_in_ms": 398.887,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.3"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.125,
+                "response_end": 362.078,
+                "total_response_time_in_ms": 361.953,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.121,
+                "response_end": 359.255,
+                "total_response_time_in_ms": 359.134,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.129,
+                "response_end": 409.512,
+                "total_response_time_in_ms": 409.383,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.139,
+                "response_end": 103.604,
+                "total_response_time_in_ms": 103.465,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.0"
+            }
+        ],
+        "time_since_last_paint_threshold": 800,
+        "timer_end": 4104.5,
+        "timer_start": 3291.1999999999534,
+        "total_duration_in_ms": 813.3000000000466
+    },
+    {
+        "average_fps": 37.0,
+        "frame_durations_in_ms": [
+            6.5,
+            14.399999999965075,
+            16.70000000001164,
+            16.900000000023283,
+            16.5,
+            16.699999999953434,
+            16.70000000001164,
+            16.70000000001164,
+            16.79999999998836,
+            16.5,
+            16.70000000001164,
+            16.70000000001164,
+            16.599999999976717,
+            17,
+            16.400000000023283,
+            16.599999999976717,
+            16.79999999998836,
+            16.5,
+            16.70000000001164,
+            16.70000000001164,
+            16.599999999976717,
+            16.70000000001164,
+            16.600000000034925,
+            16.699999999953434,
+            16.70000000001164,
+            16.70000000001164,
+            16.5,
+            16.79999999998836,
+            16.5,
+            16.70000000001164
+        ],
+        "request_data": [
+            {
+                "method": "GET",
+                "request_start": 18.689,
+                "response_end": 87.376,
+                "total_response_time_in_ms": 68.68700000000001,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/.zmetadata"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.211,
+                "response_end": 62.411,
+                "total_response_time_in_ms": 62.2,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/month/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.136,
+                "response_end": 187.231,
+                "total_response_time_in_ms": 187.095,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/band/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.223,
+                "response_end": 210.265,
+                "total_response_time_in_ms": 210.04199999999997,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.122,
+                "response_end": 344.201,
+                "total_response_time_in_ms": 344.079,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.124,
+                "response_end": 285.876,
+                "total_response_time_in_ms": 285.75199999999995,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.121,
+                "response_end": 315.689,
+                "total_response_time_in_ms": 315.56800000000004,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.175,
+                "response_end": 311.293,
+                "total_response_time_in_ms": 311.118,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.3"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.121,
+                "response_end": 291.44,
+                "total_response_time_in_ms": 291.319,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.117,
+                "response_end": 346.512,
+                "total_response_time_in_ms": 346.395,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.3"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.134,
+                "response_end": 183.254,
+                "total_response_time_in_ms": 183.12,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.0"
+            }
+        ],
+        "time_since_last_paint_threshold": 800,
+        "timer_end": 3352.7999999999884,
+        "timer_start": 2546,
+        "total_duration_in_ms": 806.7999999999884
+    },
+    {
+        "average_fps": 38.0,
+        "frame_durations_in_ms": [
+            2.900000000023283,
+            7.399999999965075,
+            15.900000000023283,
+            16.70000000001164,
+            16.70000000001164,
+            16.599999999976717,
+            16.900000000023283,
+            16.399999999965075,
+            16.70000000001164,
+            16.79999999998836,
+            16.79999999998836,
+            16.5,
+            16.70000000001164,
+            16.600000000034925,
+            16.599999999976717,
+            16.79999999998836,
+            16.600000000034925,
+            16.699999999953434,
+            24,
+            9.300000000046566,
+            16.699999999953434,
+            16.600000000034925,
+            16.599999999976717,
+            16.900000000023283,
+            16.599999999976717,
+            16.70000000001164,
+            16.599999999976717,
+            16.5,
+            16.70000000001164,
+            16.900000000023283,
+            16.599999999976717
+        ],
+        "request_data": [
+            {
+                "method": "GET",
+                "request_start": 16.45,
+                "response_end": 31.886,
+                "total_response_time_in_ms": 15.436,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/.zmetadata"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.707,
+                "response_end": 19.7,
+                "total_response_time_in_ms": 18.993,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/month/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.135,
+                "response_end": 19.115,
+                "total_response_time_in_ms": 18.979999999999997,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/band/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.185,
+                "response_end": 114.668,
+                "total_response_time_in_ms": 114.483,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.162,
+                "response_end": 18.258,
+                "total_response_time_in_ms": 18.096,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.125,
+                "response_end": 114.331,
+                "total_response_time_in_ms": 114.206,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.124,
+                "response_end": 90.354,
+                "total_response_time_in_ms": 90.23,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.123,
+                "response_end": 139.638,
+                "total_response_time_in_ms": 139.51500000000001,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.122,
+                "response_end": 59.144,
+                "total_response_time_in_ms": 59.022,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.259,
+                "response_end": 132.746,
+                "total_response_time_in_ms": 132.48700000000002,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.3"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.277,
+                "response_end": 97.752,
+                "total_response_time_in_ms": 97.475,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.3"
+            }
+        ],
+        "time_since_last_paint_threshold": 800,
+        "timer_end": 3685.7999999999884,
+        "timer_start": 2873.7999999999884,
+        "total_duration_in_ms": 812.0
+    },
+    {
+        "average_fps": 37.0,
+        "frame_durations_in_ms": [
+            12.200000000011642,
+            10.299999999988358,
+            16.599999999976717,
+            16.79999999998836,
+            16.900000000023283,
+            16.599999999976717,
+            16.600000000034925,
+            16.599999999976717,
+            16.70000000001164,
+            16.79999999998836,
+            16.600000000034925,
+            16.599999999976717,
+            16.79999999998836,
+            16.400000000023283,
+            17,
+            16.599999999976717,
+            16.79999999998836,
+            16.300000000046566,
+            16.599999999976717,
+            16.70000000001164,
+            16.70000000001164,
+            16.599999999976717,
+            17.099999999976717,
+            16.100000000034925,
+            16.899999999965075,
+            16.70000000001164,
+            16.600000000034925,
+            17.199999999953434,
+            16.20000000001164,
+            16.600000000034925
+        ],
+        "request_data": [
+            {
+                "method": "GET",
+                "request_start": 17.711,
+                "response_end": 109.847,
+                "total_response_time_in_ms": 92.136,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/.zmetadata"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.139,
+                "response_end": 82.967,
+                "total_response_time_in_ms": 82.828,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/band/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.169,
+                "response_end": 95.165,
+                "total_response_time_in_ms": 94.99600000000001,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/month/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.134,
+                "response_end": 77.772,
+                "total_response_time_in_ms": 77.638,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.178,
+                "response_end": 235.893,
+                "total_response_time_in_ms": 235.715,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.13,
+                "response_end": 207.866,
+                "total_response_time_in_ms": 207.73600000000002,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.127,
+                "response_end": 236.765,
+                "total_response_time_in_ms": 236.63799999999998,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.121,
+                "response_end": 224.473,
+                "total_response_time_in_ms": 224.352,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.3"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.124,
+                "response_end": 315.946,
+                "total_response_time_in_ms": 315.822,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.126,
+                "response_end": 301.073,
+                "total_response_time_in_ms": 300.947,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.123,
+                "response_end": 353.559,
+                "total_response_time_in_ms": 353.43600000000004,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.3"
+            }
+        ],
+        "time_since_last_paint_threshold": 800,
+        "timer_end": 3500,
+        "timer_start": 2691.7000000000116,
+        "total_duration_in_ms": 808.2999999999884
+    },
+    {
+        "average_fps": 38.0,
+        "frame_durations_in_ms": [
+            4.699999999953434,
+            8.400000000023283,
+            16.599999999976717,
+            16.70000000001164,
+            16.600000000034925,
+            16.79999999998836,
+            16.5,
+            16.5,
+            16.79999999998836,
+            16.79999999998836,
+            16.600000000034925,
+            16.599999999976717,
+            16.900000000023283,
+            16.5,
+            16.79999999998836,
+            16.599999999976717,
+            16.600000000034925,
+            16.699999999953434,
+            16.70000000001164,
+            16.600000000034925,
+            16.79999999998836,
+            16.599999999976717,
+            16.70000000001164,
+            16.599999999976717,
+            16.70000000001164,
+            16.70000000001164,
+            16.599999999976717,
+            16.600000000034925,
+            16.79999999998836,
+            16.5,
+            16.900000000023283
+        ],
+        "request_data": [
+            {
+                "method": "GET",
+                "request_start": 18.335,
+                "response_end": 33.369,
+                "total_response_time_in_ms": 15.033999999999999,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/.zmetadata"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.204,
+                "response_end": 9.21,
+                "total_response_time_in_ms": 9.006,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/month/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.156,
+                "response_end": 9.08,
+                "total_response_time_in_ms": 8.924,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/band/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.18,
+                "response_end": 169.917,
+                "total_response_time_in_ms": 169.737,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.124,
+                "response_end": 194.199,
+                "total_response_time_in_ms": 194.07500000000002,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.446,
+                "response_end": 179.549,
+                "total_response_time_in_ms": 179.103,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.3"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.156,
+                "response_end": 26.295,
+                "total_response_time_in_ms": 26.139000000000003,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.132,
+                "response_end": 161.713,
+                "total_response_time_in_ms": 161.581,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.123,
+                "response_end": 102.58,
+                "total_response_time_in_ms": 102.457,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.136,
+                "response_end": 95.769,
+                "total_response_time_in_ms": 95.63300000000001,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.237,
+                "response_end": 125.496,
+                "total_response_time_in_ms": 125.259,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.3"
+            }
+        ],
+        "time_since_last_paint_threshold": 800,
+        "timer_end": 4180.200000000012,
+        "timer_start": 3364.9000000000233,
+        "total_duration_in_ms": 815.2999999999884
+    },
+    {
+        "average_fps": 37.0,
+        "frame_durations_in_ms": [
+            10,
+            10.599999999976717,
+            16.70000000001164,
+            16.599999999976717,
+            16.79999999998836,
+            16.70000000001164,
+            16.70000000001164,
+            16.599999999976717,
+            16.800000000046566,
+            16.79999999998836,
+            16.29999999998836,
+            16.900000000023283,
+            16.599999999976717,
+            16.599999999976717,
+            17.100000000034925,
+            16.29999999998836,
+            16.70000000001164,
+            16.70000000001164,
+            16.599999999976717,
+            16.79999999998836,
+            16.400000000023283,
+            16.79999999998836,
+            16.599999999976717,
+            16.800000000046566,
+            16.5,
+            16.899999999965075,
+            16.400000000023283,
+            16.70000000001164,
+            16.79999999998836,
+            16.599999999976717
+        ],
+        "request_data": [
+            {
+                "method": "GET",
+                "request_start": 17.35,
+                "response_end": 33.221,
+                "total_response_time_in_ms": 15.870999999999995,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/.zmetadata"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.694,
+                "response_end": 9.979,
+                "total_response_time_in_ms": 9.285,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/month/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.136,
+                "response_end": 13.508,
+                "total_response_time_in_ms": 13.372,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/band/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.184,
+                "response_end": 114.66,
+                "total_response_time_in_ms": 114.476,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.425,
+                "response_end": 28.054,
+                "total_response_time_in_ms": 27.628999999999998,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.59,
+                "response_end": 131.249,
+                "total_response_time_in_ms": 130.659,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.704,
+                "response_end": 130.068,
+                "total_response_time_in_ms": 129.364,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.684,
+                "response_end": 198.017,
+                "total_response_time_in_ms": 197.333,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.672,
+                "response_end": 91.93,
+                "total_response_time_in_ms": 91.25800000000001,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.513,
+                "response_end": 170.048,
+                "total_response_time_in_ms": 169.535,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.3"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.307,
+                "response_end": 130.2,
+                "total_response_time_in_ms": 129.893,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.3"
+            }
+        ],
+        "time_since_last_paint_threshold": 800,
+        "timer_end": 3605.2000000000116,
+        "timer_start": 2798.9000000000233,
+        "total_duration_in_ms": 806.2999999999884
+    },
+    {
+        "average_fps": 37.0,
+        "frame_durations_in_ms": [
+            5,
+            13.799999999988358,
+            16.5,
+            16.600000000034925,
+            16.899999999965075,
+            16.600000000034925,
+            16.70000000001164,
+            16.5,
+            16.699999999953434,
+            16.600000000034925,
+            16.70000000001164,
+            16.699999999953434,
+            16.70000000001164,
+            16.5,
+            16.600000000034925,
+            16.899999999965075,
+            16.600000000034925,
+            16.599999999976717,
+            16.70000000001164,
+            16.70000000001164,
+            16.599999999976717,
+            16.70000000001164,
+            16.70000000001164,
+            16.79999999998836,
+            16.70000000001164,
+            16.599999999976717,
+            16.599999999976717,
+            16.800000000046566,
+            16.599999999976717,
+            16.599999999976717
+        ],
+        "request_data": [
+            {
+                "method": "GET",
+                "request_start": 16.29,
+                "response_end": 88.164,
+                "total_response_time_in_ms": 71.874,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/.zmetadata"
+            },
+            {
+                "method": "GET",
+                "request_start": 3.362,
+                "response_end": 58.197,
+                "total_response_time_in_ms": 54.835,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/band/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 3.372,
+                "response_end": 72.295,
+                "total_response_time_in_ms": 68.923,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/month/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.229,
+                "response_end": 215.841,
+                "total_response_time_in_ms": 215.612,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.137,
+                "response_end": 70.717,
+                "total_response_time_in_ms": 70.58,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.121,
+                "response_end": 211.966,
+                "total_response_time_in_ms": 211.845,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.119,
+                "response_end": 185.362,
+                "total_response_time_in_ms": 185.243,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.12,
+                "response_end": 262.833,
+                "total_response_time_in_ms": 262.713,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.131,
+                "response_end": 163.46,
+                "total_response_time_in_ms": 163.329,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.123,
+                "response_end": 281.087,
+                "total_response_time_in_ms": 280.964,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.3"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.122,
+                "response_end": 179.147,
+                "total_response_time_in_ms": 179.02499999999998,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.3"
+            }
+        ],
+        "time_since_last_paint_threshold": 800,
+        "timer_end": 3663.7999999999884,
+        "timer_start": 2859.399999999965,
+        "total_duration_in_ms": 804.4000000000233
+    },
+    {
+        "average_fps": 37.0,
+        "frame_durations_in_ms": [
+            6.100000000034925,
+            16.199999999953434,
+            16.70000000001164,
+            16.900000000023283,
+            16.599999999976717,
+            16.400000000023283,
+            16.79999999998836,
+            16.599999999976717,
+            16.600000000034925,
+            16.70000000001164,
+            16.899999999965075,
+            16.5,
+            16.600000000034925,
+            16.79999999998836,
+            16.599999999976717,
+            16.70000000001164,
+            16.5,
+            16.70000000001164,
+            16.599999999976717,
+            16.79999999998836,
+            16.70000000001164,
+            16.600000000034925,
+            16.699999999953434,
+            16.70000000001164,
+            16.600000000034925,
+            16.599999999976717,
+            16.70000000001164,
+            16.70000000001164,
+            16.699999999953434,
+            16.600000000034925
+        ],
+        "request_data": [
+            {
+                "method": "GET",
+                "request_start": 17.999,
+                "response_end": 112.674,
+                "total_response_time_in_ms": 94.67500000000001,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/.zmetadata"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.18,
+                "response_end": 176.629,
+                "total_response_time_in_ms": 176.44899999999998,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/month/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.146,
+                "response_end": 199.537,
+                "total_response_time_in_ms": 199.39100000000002,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/band/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.185,
+                "response_end": 181.531,
+                "total_response_time_in_ms": 181.346,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.161,
+                "response_end": 98.442,
+                "total_response_time_in_ms": 98.28099999999999,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.124,
+                "response_end": 363.749,
+                "total_response_time_in_ms": 363.625,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.123,
+                "response_end": 189.805,
+                "total_response_time_in_ms": 189.68200000000002,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.123,
+                "response_end": 370.33,
+                "total_response_time_in_ms": 370.207,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.121,
+                "response_end": 267.179,
+                "total_response_time_in_ms": 267.058,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.265,
+                "response_end": 338.879,
+                "total_response_time_in_ms": 338.61400000000003,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.3"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.304,
+                "response_end": 365.975,
+                "total_response_time_in_ms": 365.67100000000005,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.3"
+            }
+        ],
+        "time_since_last_paint_threshold": 800,
+        "timer_end": 4140.900000000023,
+        "timer_start": 3332.7999999999884,
+        "total_duration_in_ms": 808.1000000000349
+    },
+    {
+        "average_fps": 37.0,
+        "frame_durations_in_ms": [
+            10.100000000034925,
+            5.899999999965075,
+            16.600000000034925,
+            16.599999999976717,
+            16.79999999998836,
+            16.800000000046566,
+            16.5,
+            16.79999999998836,
+            16.5,
+            16.70000000001164,
+            16.699999999953434,
+            16.600000000034925,
+            16.599999999976717,
+            16.79999999998836,
+            16.70000000001164,
+            16.600000000034925,
+            16.899999999965075,
+            16.600000000034925,
+            16.5,
+            16.699999999953434,
+            16.70000000001164,
+            16.70000000001164,
+            16.5,
+            16.79999999998836,
+            16.600000000034925,
+            16.599999999976717,
+            16.70000000001164,
+            16.70000000001164,
+            16.699999999953434,
+            16.600000000034925
+        ],
+        "request_data": [
+            {
+                "method": "GET",
+                "request_start": 16.161,
+                "response_end": 31.251,
+                "total_response_time_in_ms": 15.09,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/.zmetadata"
+            },
+            {
+                "method": "GET",
+                "request_start": 40.165,
+                "response_end": 73.844,
+                "total_response_time_in_ms": 33.678999999999995,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/month/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 40.36,
+                "response_end": 71.622,
+                "total_response_time_in_ms": 31.262,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/0/band/0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.24,
+                "response_end": 126.94,
+                "total_response_time_in_ms": 126.7,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.144,
+                "response_end": 25.6,
+                "total_response_time_in_ms": 25.456000000000003,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.0"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.13,
+                "response_end": 112.166,
+                "total_response_time_in_ms": 112.036,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.361,
+                "response_end": 81.392,
+                "total_response_time_in_ms": 81.03099999999999,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.1"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.131,
+                "response_end": 134.173,
+                "total_response_time_in_ms": 134.042,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.123,
+                "response_end": 62.275,
+                "total_response_time_in_ms": 62.152,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.2"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.126,
+                "response_end": 129.252,
+                "total_response_time_in_ms": 129.126,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.1.3"
+            },
+            {
+                "method": "GET",
+                "request_start": 0.156,
+                "response_end": 94.866,
+                "total_response_time_in_ms": 94.71,
+                "url": "https://storage.googleapis.com/carbonplan-maps/v2/demo/4d/tavg-prec-month/2/climate/0.0.2.3"
+            }
+        ],
+        "time_since_last_paint_threshold": 800,
+        "timer_end": 4541.5,
+        "timer_start": 3739.5,
+        "total_duration_in_ms": 802.0
+    }
+]
