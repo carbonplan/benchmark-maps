@@ -1,21 +1,32 @@
+import argparse
 import datetime
 import json
 import pathlib
+import tempfile
 
 import numpy as np
 from playwright.sync_api import sync_playwright
+from rich import box, print
+from rich.columns import Columns
+from rich.panel import Panel
 
 data_dir = pathlib.Path(__file__).parent / 'data'
 data_dir.mkdir(exist_ok=True, parents=True)
 
+# get temporary folder for screenshots
+temp_dir_path = pathlib.Path(tempfile.gettempdir())
 
+
+now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
 all_data = []
 
 
-def run(playwright):
+def run(*, playwright, runs: int, run_number: int, time_since_last_paint_threshold: int):
     browser = playwright.chromium.launch()
     context = browser.new_context()
     page = context.new_page()
+
+    print(f'[bold cyan]🚀 Starting benchmark run: {run_number}/{runs}...[/bold cyan]')
 
     request_data = []
 
@@ -44,8 +55,6 @@ def run(playwright):
     # Click on the map element
     page.click('.mapboxgl-canvas')
 
-    # Start the timer and initialize frame counter in the page
-
     # Create the PerformanceObserver in the page's context
     page.evaluate(
         """
@@ -67,23 +76,23 @@ def run(playwright):
     # the following approach involves storing the time of the last paint event and
     # only counting a frame if the time since the last paint event is less than a certain threshold (e.g., 500 ms)
     # the _frameCounter and _frameDurations will only be updated when the page is actively being painted.
-    time_since_last_paint_threshold = 500  # change this threshold as needed (in ms)
+
     page.evaluate(
-        f"""
+        """
     window._frameCounter = 0;
     window._timerStart = performance.now();
     window._frameDurations = [];
     window._prevFrameTime = performance.now();
-    window._rafId = requestAnimationFrame(function countFrames() {{
+    window._rafId = requestAnimationFrame(function countFrames() {
         const currentTime = performance.now();
         const timeSinceLastPaint = currentTime - window._lastPaint;
-        if (timeSinceLastPaint < {time_since_last_paint_threshold}) {{  // Change this threshold as needed
+        if (timeSinceLastPaint < 500) {  // Change this threshold as needed
             window._frameDurations.push(currentTime - window._prevFrameTime);
             window._frameCounter++;
-        }}
+        }
         window._prevFrameTime = currentTime;
         window._rafId = requestAnimationFrame(countFrames);
-    }});
+    });
 """
     )
 
@@ -110,12 +119,16 @@ def run(playwright):
     """
     )
 
+    # save screenshot to temporary file
+    path = temp_dir_path / f'{now}-{run_number}.png'
+
+    page.screenshot(path=path)
+    print(f"[bold cyan]📸 Screenshot saved as '{path}'[/bold cyan]")
+    browser.close()
     fps = durations[0]
     frame_durations = durations[1]
     timer_start = durations[2]
     timer_end = durations[3]
-
-    browser.close()
 
     # record frame duration and fps
 
@@ -126,33 +139,131 @@ def run(playwright):
         'timer_start': timer_start,
         'timer_end': timer_end,
         'total_duration_in_ms': timer_end - timer_start,
+        'time_since_last_paint_threshold': time_since_last_paint_threshold,
     }
 
     all_data.append(data)
 
-    frame_durations_mean = np.mean(frame_durations)
-    frame_durations_median = np.median(frame_durations)
-    frame_durations_percentiles = np.percentile(frame_durations, [25, 50, 75, 90])
 
-    print(f"Average FPS: {data['average_fps']}")
-    print(f'Average frame duration: {frame_durations_mean}')
-    print(f'Median frame duration: {frame_durations_median}')
-    print(f'25th percentile frame duration: {frame_durations_percentiles[0]}')
-    print(f'50th percentile frame duration: {frame_durations_percentiles[1]}')
-    print(f'75th percentile frame duration: {frame_durations_percentiles[2]}')
-    print(f'90th percentile frame duration: {frame_durations_percentiles[3]}')
-    print(f"Total number of requests: {len(data['request_data'])}")
-    print(
-        f"Average response time for each tile: {sum(x['total_response_time_in_ms'] for x in data['request_data']) / len(data['request_data']):.2f} ms"
+def main(*, runs: int, time_since_last_paint_threshold: int):
+    with sync_playwright() as playwright:
+        for run_number in range(runs):
+            run(
+                playwright=playwright,
+                runs=runs,
+                run_number=run_number + 1,
+                time_since_last_paint_threshold=time_since_last_paint_threshold,
+            )
+
+        # compute an aggregate of the data
+        average_fps = np.mean([x['average_fps'] for x in all_data])
+        average_frame_duration = np.mean(
+            [x['total_duration_in_ms'] / x['average_fps'] for x in all_data]
+        )
+        average_total_duration = np.mean([x['total_duration_in_ms'] for x in all_data])
+
+        total_response_times = []
+
+        for data in all_data:
+            for request_data in data['request_data']:
+                total_response_time = request_data['total_response_time_in_ms']
+                total_response_times.append(total_response_time)
+
+        average_request_duration = np.mean(total_response_times)
+        median_request_duration = np.median(total_response_times)
+        frame_duration_percentiles = np.percentile(total_response_times, [25, 50, 75, 90])
+
+        configs = [
+            Panel(
+                f'[bold green]🔄 Number of runs: {runs}[/bold green]', box=box.DOUBLE, expand=False
+            ),
+            Panel(
+                f"[bold green]⏱️ Time since last paint threshold: {all_data[0]['time_since_last_paint_threshold']} ms[/bold green]",
+                box=box.ROUNDED,
+                expand=False,
+            ),
+        ]
+
+        frame_results = [
+            Panel(
+                f'[bold green]📊 Average FPS: {average_fps:.2f}[/bold green]',
+                box=box.DOUBLE,
+                expand=False,
+            ),
+            Panel(
+                f'[bold green]⏱️ Average frame duration: {average_frame_duration:.2f} ms[/bold green]',
+                box=box.DOUBLE,
+                expand=False,
+            ),
+            Panel(
+                f'[bold green]⏱️ 25th percentile frame duration: {frame_duration_percentiles[0]:.2f} ms[/bold green]',
+                box=box.DOUBLE,
+                expand=False,
+            ),
+            Panel(
+                f'[bold green]⏱️ 50th percentile frame duration: {frame_duration_percentiles[1]:.2f} ms[/bold green]',
+                box=box.DOUBLE,
+                expand=False,
+            ),
+            Panel(
+                f'[bold green]⏱️ 75th percentile frame duration: {frame_duration_percentiles[2]:.2f} ms[/bold green]',
+                box=box.DOUBLE,
+                expand=False,
+            ),
+            Panel(
+                f'[bold green]⏱️ 90th percentile frame duration: {frame_duration_percentiles[3]:.2f} ms[/bold green]',
+                box=box.DOUBLE,
+                expand=False,
+            ),
+        ]
+
+        duration_results = [
+            Panel(
+                f'[bold green]⏱️ Average total duration: {average_total_duration:.2f} ms[/bold green]',
+                box=box.DOUBLE,
+                expand=False,
+            )
+        ]
+
+        request_results = [
+            Panel(
+                f'[bold green]⏱️ Average request duration: {average_request_duration:.2f} ms[/bold green]',
+                box=box.DOUBLE,
+                expand=False,
+            ),
+            Panel(
+                f'[bold green]⏱️ Median request duration: {median_request_duration:.2f} ms[/bold green]',
+                box=box.DOUBLE,
+                expand=False,
+            ),
+        ]
+
+        print(Panel('[bold blue]Frame Results[/bold blue]', box=box.DOUBLE, expand=False))
+        print(Columns(frame_results, equal=True, expand=False))
+
+        print(Panel('[bold blue]Request Results[/bold blue]', box=box.DOUBLE, expand=False))
+        print(Columns(request_results, equal=True, expand=False))
+
+        print(Panel('[bold blue]Duration Results[/bold blue]', box=box.DOUBLE, expand=False))
+        print(Columns(duration_results, equal=True, expand=False))
+
+        print(Panel('[bold blue]Config[/bold blue]', box=box.DOUBLE, expand=False))
+        print(Columns(configs, equal=True, expand=False))
+
+        # Write the data to a json file
+
+        with open(data_dir / f'data-{now}.json', 'w') as outfile:
+            json.dump(all_data, outfile, indent=4, sort_keys=True)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--runs', type=int, default=1, help='Number of runs to perform')
+    parser.add_argument(
+        '--time-since-last-paint-threshold',
+        type=int,
+        default=700,
+        help='Time since last paint threshold in ms',
     )
-    print(f'Total duration: {data["total_duration_in_ms"]:.2f} ms')
-    print(f'Time since last paint threshold: {time_since_last_paint_threshold} ms')
-
-
-with sync_playwright() as playwright:
-    run(playwright)
-
-    # Write the data to a json file
-    now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
-    with open(data_dir / 'data.json', 'w') as outfile:
-        json.dump(all_data, outfile, indent=4, sort_keys=True)
+    args = parser.parse_args()
+    main(runs=args.runs, time_since_last_paint_threshold=args.time_since_last_paint_threshold)

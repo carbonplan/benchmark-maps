@@ -9,5 +9,6 @@ dependencies:
   - pytest
   - requests
   - typing-extensions
+  - rich
   - pip:
       - pytest-playwright
