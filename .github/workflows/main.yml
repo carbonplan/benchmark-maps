@@ -50,6 +50,7 @@ jobs:
           playwright install
 
       - name: Run test benchmarks
+        if: github.event_name != 'workflow_dispatch'
         run: |
           python main.py --runs 10 --time-since-last-paint-threshold 800
 
@@ -69,8 +70,11 @@ jobs:
           author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           title: Update Benchmark Results
           body: |
-            - Updates benchmark results with the latest data from runs triggered by: ${{ github.actor }}
+            - Updates benchmark results with the latest data from runs triggered by: @${{ github.actor }}
+            - Configurations used:
+                - Number of runs: ${{ github.event.inputs.runs }}
+                - Time since last paint threshold: ${{ github.event.inputs.time-since-last-paint-threshold }}
 
             [1]: https://github.com/peter-evans/create-pull-request
-          branch: update-data-${{ github.actor }}-${{ github.run_id }}
+          branch: update-data-${{ github.actor }}-${{ github.event.inputs.runs }}-${{ github.event.inputs.time-since-last-paint-threshold }}
           delete-branch: true
