@@ -78,21 +78,21 @@ def run(*, playwright, runs: int, run_number: int, time_since_last_paint_thresho
     # the _frameCounter and _frameDurations will only be updated when the page is actively being painted.
 
     page.evaluate(
-        """
+        f"""
     window._frameCounter = 0;
     window._timerStart = performance.now();
     window._frameDurations = [];
     window._prevFrameTime = performance.now();
-    window._rafId = requestAnimationFrame(function countFrames() {
+    window._rafId = requestAnimationFrame(function countFrames() {{
         const currentTime = performance.now();
         const timeSinceLastPaint = currentTime - window._lastPaint;
-        if (timeSinceLastPaint < 500) {  // Change this threshold as needed
+        if (timeSinceLastPaint < {time_since_last_paint_threshold}) {{  // Change this threshold as needed
             window._frameDurations.push(currentTime - window._prevFrameTime);
             window._frameCounter++;
-        }
+        }}
         window._prevFrameTime = currentTime;
         window._rafId = requestAnimationFrame(countFrames);
-    });
+    }});
 """
     )
 
