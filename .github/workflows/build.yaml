@@ -23,10 +23,10 @@ jobs:
       - name: Checkout files in repo
         uses: actions/checkout@main
 
-    - name: Set Environment Variables
-      run: |
+      - name: Set Environment Variables
+        run: |
 
-        echo "DATE_TAG=$(TZ='America/Seattle' date +'%Y.%m.%d')" >> "$GITHUB_ENV"
+          echo "DATE_TAG=$(TZ='America/Seattle' date +'%Y.%m.%d')" >> "$GITHUB_ENV"
 
       - name: Build and push the image to quay.io ${{ matrix.environment }}
         uses: jupyterhub/repo2docker-action@master
@@ -40,7 +40,6 @@ jobs:
           #
           IMAGE_NAME: 'carbonplan/benchmark-maps'
           ADDITIONAL_TAG: ${{ env.DATE_TAG }}
-
 
       # Lets us monitor disks getting full as images get bigger over time
       - name: Show how much disk space is left
