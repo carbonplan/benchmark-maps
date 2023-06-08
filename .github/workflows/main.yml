@@ -37,7 +37,7 @@ jobs:
         shell: bash -l {0}
 
     container:
-      image: quay.io/carbonplan/benchmark-maps:2023.06.08
+      image: quay.io/carbonplan/benchmark-maps:latest
       options: --user root
     steps:
       - uses: actions/checkout@v3
