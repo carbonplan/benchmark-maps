@@ -35,6 +35,10 @@ jobs:
     defaults:
       run:
         shell: bash -l {0}
+
+    container:
+      image: quay.io/carbonplan/benchmark-maps:latest
+      options: --user root
     steps:
       - uses: actions/checkout@v3
       - name: set up conda environment
