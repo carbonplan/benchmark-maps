@@ -3,7 +3,7 @@ name: Build and push container image
 on:
   pull_request:
     paths:
-      - 'envs/**.yml'
+      - 'binder/**.yml'
 
 jobs:
   test-build:
