@@ -6,5 +6,5 @@ COPY binder/apt.txt /tmp/apt.txt
 
 RUN mamba env update --prefix ${CONDA_DIR} --file /tmp/environment.yml
 
-RUN xargs -a /tmp/apt.txt  apt install
+RUN apt-get update && xargs -a /tmp/apt.txt  apt-get install
 RUN ls
