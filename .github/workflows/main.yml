@@ -35,12 +35,16 @@ jobs:
     defaults:
       run:
         shell: bash -l {0}
+
+    container:
+      image: quay.io/carbonplan/benchmark-maps:latest
+      options: --user root
     steps:
       - uses: actions/checkout@v3
       - name: set up conda environment
         uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: envs/environment.yml
+          environment-file: binder/environment.yml
           init-shell: >-
             bash
           cache-environment: true
