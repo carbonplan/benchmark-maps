@@ -36,7 +36,7 @@ def calc_chunk_dict(ds: xr.Dataset, target_mb: int, pixels_per_tile: int = None)
 
 def validate_zarr_store(target: str, raise_on_error=True) -> bool:
     """Validate a zarr store.
-    
+
     Based on https://github.com/carbonplan/cmip6-downscaling
 
     Parameters
@@ -88,7 +88,7 @@ def _pyramid_postprocess(
     '''Postprocess data pyramid
 
     Adds multiscales metadata and sets Zarr encoding
-    
+
     Based on https://github.com/carbonplan/cmip6-downscaling
 
     Parameters
@@ -126,9 +126,11 @@ def _pyramid_postprocess(
     return dt
 
 
-def pyramid(ds_path: str, target: str, levels: int = 2, pixels_per_tile: int = 128, target_mb: int = 5) -> str:
+def pyramid(
+    ds_path: str, target: str, levels: int = 2, pixels_per_tile: int = 128, target_mb: int = 5
+) -> str:
     '''Create a data pyramid from an xarray Dataset
-    
+
     Based on https://github.com/carbonplan/cmip6-downscaling
 
     Parameters
