@@ -3,9 +3,10 @@ import xarray as xr
 import zarr
 from carbonplan_data.utils import set_zarr_encoding as set_web_zarr_encoding
 from ndpyramid import pyramid_regrid
+from typing import Union
 
 
-def calc_chunk_dict(ds: xr.Dataset, target_mb: int, pixels_per_tile: int = None) -> dict:
+def calc_chunk_dict(ds: Union[xr.Dataset, xr.DataArray], target_mb: int, pixels_per_tile: int = None) -> dict:
     """Calculate chunks that for uncompressed chunks to match target size.
 
     Parameters
@@ -21,8 +22,11 @@ def calc_chunk_dict(ds: xr.Dataset, target_mb: int, pixels_per_tile: int = None)
     -------
     target_chunks : dict
     """
-    for var in ds.data_vars:
-        data_bytesize = ds[var].dtype.itemsize
+    try:
+        for var in ds.data_vars:
+            data_bytesize = ds[var].dtype.itemsize
+    except:
+        data_bytesize = ds.dtype.itemsize
     if pixels_per_tile is None:
         slice_mb = ds.nbytes * 1e-6
         target_chunks = {'time': int(target_mb // slice_mb)}
