@@ -21,10 +21,15 @@ now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
 all_data = []
 
 
+def log_console_message(msg):
+    print(f'Browser console: {msg}')
+
+
 def run(*, playwright, runs: int, run_number: int, time_since_last_paint_threshold: int):
     browser = playwright.chromium.launch()
     context = browser.new_context()
     page = context.new_page()
+    page.on('console', log_console_message)
 
     print(f'[bold cyan]🚀 Starting benchmark run: {run_number}/{runs}...[/bold cyan]')
 
@@ -61,12 +66,14 @@ def run(*, playwright, runs: int, run_number: int, time_since_last_paint_thresho
         window._lastPaint = performance.now();
         window._perfObserver = new PerformanceObserver((list) => {
             for (const entry of list.getEntries()) {
+                console.log(entry.toJSON());
                 if (entry.entryType === 'paint') {
                     window._lastPaint = performance.now();
                 }
             }
         });
-        window._perfObserver.observe({ entryTypes: ['paint'] });
+        window._perfObserver.observe({ entryTypes: PerformanceObserver.supportedEntryTypes });
+
     """
     )
 
@@ -89,6 +96,9 @@ def run(*, playwright, runs: int, run_number: int, time_since_last_paint_thresho
         if (timeSinceLastPaint < {time_since_last_paint_threshold}) {{  // Change this threshold as needed
             window._frameDurations.push(currentTime - window._prevFrameTime);
             window._frameCounter++;
+            //console.log(`Frame ${{window._frameCounter}} took ${{currentTime - window._prevFrameTime}} ms`)
+            // console.log(`Time since last paint: ${{window._lastPaint}}`)
+
         }}
         window._prevFrameTime = currentTime;
         window._rafId = requestAnimationFrame(countFrames);
