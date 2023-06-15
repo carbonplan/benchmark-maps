@@ -25,7 +25,13 @@ def log_console_message(msg):
     print(f'Browser console: {msg}')
 
 
-def run(*, playwright, runs: int, run_number: int, time_since_last_paint_threshold: int):
+def run(
+    *,
+    playwright,
+    runs: int,
+    run_number: int,
+    url: str = 'https://maps-demo-git-katamartin-benchmarking-carbonplan.vercel.app/',
+):
     browser = playwright.chromium.launch()
     context = browser.new_context()
     page = context.new_page()
@@ -48,11 +54,11 @@ def run(*, playwright, runs: int, run_number: int, time_since_last_paint_thresho
                 'request_start': request.timing['requestStart'],
             }
         )
-        if 'storage.googleapis.com/carbonplan-maps/v2/demo' in request.url
+        if 'carbonplan-maps.s3.us-west-2.amazonaws.com/v2/demo' in request.url
         else None,
     )
 
-    page.goto('https://maps.demo.carbonplan.org/')
+    page.goto(url)
 
     # Focus on the map element
     page.focus('.mapboxgl-canvas')
@@ -60,72 +66,34 @@ def run(*, playwright, runs: int, run_number: int, time_since_last_paint_thresho
     # Click on the map element
     page.click('.mapboxgl-canvas')
 
-    # Create the PerformanceObserver in the page's context
     page.evaluate(
         """
-        window._lastPaint = performance.now();
-        window._perfObserver = new PerformanceObserver((list) => {
-            for (const entry of list.getEntries()) {
-                console.log(entry.toJSON());
-                if (entry.entryType === 'paint') {
-                    window._lastPaint = performance.now();
-                }
-            }
-        });
-        window._perfObserver.observe({ entryTypes: PerformanceObserver.supportedEntryTypes });
-
-    """
-    )
-
-    # Start the timer and initialize frame counter in the page
-    # this measures the frame rate and frame durations only during actual content changes,
-    # by counting frames when a paint event has occurred.
-    # the following approach involves storing the time of the last paint event and
-    # only counting a frame if the time since the last paint event is less than a certain threshold (e.g., 500 ms)
-    # the _frameCounter and _frameDurations will only be updated when the page is actively being painted.
-
-    page.evaluate(
-        f"""
     window._frameCounter = 0;
     window._timerStart = performance.now();
     window._frameDurations = [];
     window._prevFrameTime = performance.now();
     window._rafId = requestAnimationFrame(function countFrames() {{
         const currentTime = performance.now();
-        const timeSinceLastPaint = currentTime - window._lastPaint;
-        if (timeSinceLastPaint < {time_since_last_paint_threshold}) {{  // Change this threshold as needed
-            window._frameDurations.push(currentTime - window._prevFrameTime);
-            window._frameCounter++;
-            //console.log(`Frame ${{window._frameCounter}} took ${{currentTime - window._prevFrameTime}} ms`)
-            // console.log(`Time since last paint: ${{window._lastPaint}}`)
-
-        }}
+        const duration = currentTime - window._prevFrameTime;
+        window._frameDurations.push(duration);
         window._prevFrameTime = currentTime;
+        window._frameCounter++;
         window._rafId = requestAnimationFrame(countFrames);
     }});
-"""
-    )
-
-    # Wait until no paint events have occurred for the duration of the threshold
-    page.wait_for_function(
-        f"""
-        () => {{
-            const timeSinceLastPaint = performance.now() - window._lastPaint;
-            return timeSinceLastPaint > {time_since_last_paint_threshold};  // If time since last paint is more than threshold
-        }}
-
     """
     )
 
     # Cancel the frame counting and calculate FPS, total duration and frame durations
-    durations = page.evaluate(
+    # Wait for the map to be idle by creating a promise that resolves when the map is idle
+    page.evaluate(
         """
-        cancelAnimationFrame(window._rafId);
-        const timerEnd = performance.now();
-        const durationInSeconds = (timerEnd - window._timerStart) / 1000;
-        const fps = window._frameCounter / durationInSeconds;
-        const frameDurations = window._frameDurations;
-        [fps, frameDurations, window._timerStart, timerEnd];
+    new Promise((resolve) => {
+        window._map.onIdle(() => {
+            cancelAnimationFrame(window._rafId);
+            window._timerEnd = performance.now();
+            resolve();
+        });
+    });
     """
     )
 
@@ -134,11 +102,13 @@ def run(*, playwright, runs: int, run_number: int, time_since_last_paint_thresho
 
     page.screenshot(path=path)
     print(f"[bold cyan]📸 Screenshot saved as '{path}'[/bold cyan]")
+    # Get the captured frame durations and FPS
+    frame_durations = page.evaluate('window._frameDurations')
+    timer_end = page.evaluate('window._timerEnd')
+    timer_start = page.evaluate('window._timerStart')
+    frame_counter = page.evaluate('window._frameCounter')
     browser.close()
-    fps = durations[0]
-    frame_durations = durations[1]
-    timer_start = durations[2]
-    timer_end = durations[3]
+    fps = frame_counter / ((timer_end - timer_start) / 1000)
 
     # record frame duration and fps
 
@@ -149,20 +119,18 @@ def run(*, playwright, runs: int, run_number: int, time_since_last_paint_thresho
         'timer_start': timer_start,
         'timer_end': timer_end,
         'total_duration_in_ms': timer_end - timer_start,
-        'time_since_last_paint_threshold': time_since_last_paint_threshold,
     }
 
     all_data.append(data)
 
 
-def main(*, runs: int, time_since_last_paint_threshold: int):
+def main(*, runs: int):
     with sync_playwright() as playwright:
         for run_number in range(runs):
             run(
                 playwright=playwright,
                 runs=runs,
                 run_number=run_number + 1,
-                time_since_last_paint_threshold=time_since_last_paint_threshold,
             )
 
         # compute an aggregate of the data
@@ -185,12 +153,7 @@ def main(*, runs: int, time_since_last_paint_threshold: int):
         configs = [
             Panel(
                 f'[bold green]🔄 Number of runs: {runs}[/bold green]', box=box.DOUBLE, expand=False
-            ),
-            Panel(
-                f"[bold green]⏱️ Time since last paint threshold: {all_data[0]['time_since_last_paint_threshold']} ms[/bold green]",
-                box=box.ROUNDED,
-                expand=False,
-            ),
+            )
         ]
 
         frame_results = [
@@ -268,11 +231,5 @@ def main(*, runs: int, time_since_last_paint_threshold: int):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--runs', type=int, default=1, help='Number of runs to perform')
-    parser.add_argument(
-        '--time-since-last-paint-threshold',
-        type=int,
-        default=700,
-        help='Time since last paint threshold in ms',
-    )
     args = parser.parse_args()
-    main(runs=args.runs, time_since_last_paint_threshold=args.time_since_last_paint_threshold)
+    main(runs=args.runs)
