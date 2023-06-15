@@ -12,3 +12,4 @@ dependencies:
   - rich
   - pip:
       - pytest-playwright
+      - cloud-detect
