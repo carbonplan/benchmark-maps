@@ -2,9 +2,11 @@ import argparse
 import datetime
 import json
 import pathlib
+import subprocess
 import tempfile
 
 import numpy as np
+from cloud_detect import provider
 from playwright.sync_api import sync_playwright
 from rich import box, print
 from rich.columns import Columns
@@ -31,6 +33,8 @@ def run(
     runs: int,
     run_number: int,
     url: str = 'https://maps-demo-git-katamartin-benchmarking-carbonplan.vercel.app/',
+    playwright_python_version: str | None = None,
+    provider_name: str | None = None,
 ):
     browser = playwright.chromium.launch()
     context = browser.new_context()
@@ -110,7 +114,9 @@ def run(
     browser.close()
     fps = frame_counter / ((timer_end - timer_start) / 1000)
 
-    # record frame duration and fps
+    # Get viewport size
+    viewport_size = page.viewport_size
+    screen_resolution = f'{viewport_size["width"]}x{viewport_size["height"]}'
 
     data = {
         'average_fps': round(fps, 0),
@@ -119,18 +125,36 @@ def run(
         'timer_start': timer_start,
         'timer_end': timer_end,
         'total_duration_in_ms': timer_end - timer_start,
+        'viewport_size': viewport_size,
+        'screen_resolution': screen_resolution,
+        'playwright_python_version': playwright_python_version,
+        'provider': provider_name,
+        'browser_name': playwright.chromium.name,
+        'browser_version': browser.version,
     }
 
     all_data.append(data)
 
 
-def main(*, runs: int):
+def main(*, runs: int, detect_provider: bool = False):
+    # Get Playwright versions
+    playwright_python_version = subprocess.run(
+        ['pip', 'show', 'playwright'],
+        capture_output=True,
+        text=True,
+    )
+    playwright_python_version = playwright_python_version.stdout.split('\n')[1].split(': ')[1]
+
+    provider_name = provider() if detect_provider else 'unknown'
+
     with sync_playwright() as playwright:
         for run_number in range(runs):
             run(
                 playwright=playwright,
                 runs=runs,
                 run_number=run_number + 1,
+                playwright_python_version=playwright_python_version,
+                provider_name=provider_name,
             )
 
         # compute an aggregate of the data
@@ -231,5 +255,8 @@ def main(*, runs: int):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--runs', type=int, default=1, help='Number of runs to perform')
+    parser.add_argument(
+        '--detect-provider', action='store_true', help='Detect provider', default=False
+    )
     args = parser.parse_args()
-    main(runs=args.runs)
+    main(runs=args.runs, detect_provider=args.detect_provider)
