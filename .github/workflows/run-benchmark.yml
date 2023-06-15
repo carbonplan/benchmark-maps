@@ -1,0 +1,73 @@
+name: Run Benchmarks in GH environment
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: 'Number of runs'
+        required: true
+        type: number
+        default: 25
+      upload-results:
+        description: 'Upload results'
+        required: true
+        type: boolean
+        default: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  maps-benchmarks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v3
+      - name: set up conda environment
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: binder/environment.yml
+          init-shell: >-
+            bash
+          cache-environment: true
+          post-cleanup: 'all'
+      - name: Install browsers
+        run: |
+          playwright install
+
+      - name: Run test benchmarks
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          python main.py --runs 10
+
+      - name: Run benchmarks using user inputs
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          python main.py \
+                --runs ${{ github.event.inputs.runs }}
+
+      - name: Create Pull Request
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.upload-results == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: 'benchmark-results: update data'
+          committer: GitHub <noreply@github.com>
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          title: Update Benchmark Results
+          body: |
+            - Updates benchmark results with the latest data from runs triggered by: @${{ github.actor }}
+            - Configurations used:
+                - Number of runs: ${{ github.event.inputs.runs }}
+
+            [1]: https://github.com/peter-evans/create-pull-request
+          branch: update-data-${{ github.actor }}-${{ github.event.inputs.runs }}
+          delete-branch: true
