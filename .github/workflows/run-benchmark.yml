@@ -53,7 +53,8 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: |
           python main.py \
-                --runs ${{ github.event.inputs.runs }}
+                --runs ${{ github.event.inputs.runs }} \
+                --detect-provider
 
       - name: Create Pull Request
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.upload-results == 'true'
