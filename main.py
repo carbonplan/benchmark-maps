@@ -97,23 +97,35 @@ def run(
 
     # Wait for the map to be idle and then stop frame counting
     page.evaluate(
-        """() => {
-        return new Promise((resolve, reject) => {
-            if (!window._map) {
-                reject('window._map does not exist');
-                return;
-            }
-            window._map.onIdle(() => {
-                console.log('window._map.onIdle callback called');
-                cancelAnimationFrame(window._rafId);
-                window._timerEnd = performance.now();
-                resolve();
-            });
-        }).catch(error => {
-            console.error('Error in page.evaluate:', error);
-            throw error; // Propagate the error to the outer scope if needed
-        });
-    }"""
+        """
+() => {
+  if (!window._map) {
+    console.error('window._map does not exist');
+    // TODO: we should at the least end the timer, but probably also do something
+    // else to indicate the test is failing...
+    cancelAnimationFrame(window._rafId);
+    window._timerEnd = performance.now();
+
+  }
+
+  return new Promise((resolve, reject) => {
+    window._map.onIdle(() => {
+        console.log('window._map.onIdle callback called');
+        cancelAnimationFrame(window._rafId);
+        window._timerEnd = performance.now();
+        resolve();
+    });
+  }).catch(error => {
+    // I think the only thing this would catch is an error executing window._map.onIdle()
+    console.error('Error in page.evaluate:', error);
+    // TODO: we should at the least end the timer, but probably also do something
+    // else to indicate the test is failing...
+    cancelAnimationFrame(window._rafId);
+    window._timerEnd = performance.now();
+
+  });
+}
+    """
     )
 
     # Save screenshot to temporary file
