@@ -97,22 +97,23 @@ def run(
 
     # Wait for the map to be idle and then stop frame counting
     page.evaluate(
-        """
-    new Promise((resolve, reject) => {
-        if (!window._map) {
-            reject('window._map does not exist');
-            return;
-        }
-        window._map.onIdle(() => {
-            console.log('window._map.onIdle callback called');
-            cancelAnimationFrame(window._rafId);
-            window._timerEnd = performance.now();
-            resolve();
+        """() => {
+        return new Promise((resolve, reject) => {
+            if (!window._map) {
+                reject('window._map does not exist');
+                return;
+            }
+            window._map.onIdle(() => {
+                console.log('window._map.onIdle callback called');
+                cancelAnimationFrame(window._rafId);
+                window._timerEnd = performance.now();
+                resolve();
+            });
+        }).catch(error => {
+            console.error('Error in page.evaluate:', error);
+            throw error; // Propagate the error to the outer scope if needed
         });
-    }).catch(error => {
-        console.error('Error in page.evaluate:', error);
-    });
-    """
+    }"""
     )
 
     # Save screenshot to temporary file
