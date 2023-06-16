@@ -98,33 +98,37 @@ def run(
     # Wait for the map to be idle and then stop frame counting
     page.evaluate(
         """
-() => {
-  if (!window._map) {
-    console.error('window._map does not exist');
-    // TODO: we should at the least end the timer, but probably also do something
-    // else to indicate the test is failing...
-    cancelAnimationFrame(window._rafId);
-    window._timerEnd = performance.now();
+        () => {
+        if (!window._map) {
+            console.error('window._map does not exist')
+            // TODO: we should at the least end the timer, but probably also do something
+            // else to indicate the test is failing...
+            cancelAnimationFrame(window._rafId)
+            window._timerEnd = performance.now()
+        }
 
-  }
+        return new Promise((resolve, reject) => {
+            const THRESHOLD = 5000
+            // timeout after THRESHOLD ms if idle event is not seen
+            setTimeout(() => {
+            reject(`No idle events seen after ${THRESHOLD}ms`)
+            }, THRESHOLD)
+            window._map.onIdle(() => {
+            console.log('window._map.onIdle callback called')
+            cancelAnimationFrame(window._rafId)
+            window._timerEnd = performance.now()
+            resolve()
+            })
+        }).catch((error) => {
+            // I think the only thing this would catch is an error executing window._map.onIdle()
+            console.error('Error in page.evaluate:', error)
+            // TODO: we should at the least end the timer, but probably also do something
+            // else to indicate the test is failing...
+            cancelAnimationFrame(window._rafId)
+            window._timerEnd = performance.now()
+        })
+        }
 
-  return new Promise((resolve, reject) => {
-    window._map.onIdle(() => {
-        console.log('window._map.onIdle callback called');
-        cancelAnimationFrame(window._rafId);
-        window._timerEnd = performance.now();
-        resolve();
-    });
-  }).catch(error => {
-    // I think the only thing this would catch is an error executing window._map.onIdle()
-    console.error('Error in page.evaluate:', error);
-    // TODO: we should at the least end the timer, but probably also do something
-    // else to indicate the test is failing...
-    cancelAnimationFrame(window._rafId);
-    window._timerEnd = performance.now();
-
-  });
-}
     """
     )
 
