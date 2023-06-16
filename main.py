@@ -77,6 +77,9 @@ def run(
     page.focus('.mapboxgl-canvas')
     page.click('.mapboxgl-canvas')
 
+    # click the button that is a sibling of the div with the text "Display".
+    page.click('//div[text()="Display"]/following-sibling::button')
+
     # Start frame counting
     page.evaluate(
         """
