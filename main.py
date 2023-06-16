@@ -102,6 +102,7 @@ def run(
     page.evaluate(
         """
         () => {
+        window._error = null;
         if (!window._map) {
             console.error('window._map does not exist')
             // TODO: we should at the least end the timer, but probably also do something
@@ -114,17 +115,19 @@ def run(
             const THRESHOLD = 5000
             // timeout after THRESHOLD ms if idle event is not seen
             setTimeout(() => {
-            reject(`No idle events seen after ${THRESHOLD}ms`)
+                window._error = `No idle events seen after ${THRESHOLD}ms`;
+                reject(window._error)
             }, THRESHOLD)
             window._map.onIdle(() => {
-            console.log('window._map.onIdle callback called')
-            cancelAnimationFrame(window._rafId)
-            window._timerEnd = performance.now()
-            resolve()
+                console.log('window._map.onIdle callback called')
+                cancelAnimationFrame(window._rafId)
+                window._timerEnd = performance.now()
+                resolve()
             })
         }).catch((error) => {
             // I think the only thing this would catch is an error executing window._map.onIdle()
-            console.error('Error in page.evaluate:', error)
+            window._error = 'Error in page.evaluate: ' + error;
+            console.error(window._error);
             // TODO: we should at the least end the timer, but probably also do something
             // else to indicate the test is failing...
             cancelAnimationFrame(window._rafId)
@@ -134,6 +137,9 @@ def run(
 
     """
     )
+
+    if error := page.evaluate('window._error'):
+        raise Exception(error)
 
     # Save screenshot to temporary file
     path = temp_dir_path / f'{now}-{run_number}.png'
@@ -187,13 +193,17 @@ def main(*, runs: int, detect_provider: bool = False):
     # Run benchmark
     with sync_playwright() as playwright:
         for run_number in range(runs):
-            run(
-                playwright=playwright,
-                runs=runs,
-                run_number=run_number + 1,
-                playwright_python_version=playwright_python_version,
-                provider_name=provider_name,
-            )
+            try:
+                run(
+                    playwright=playwright,
+                    runs=runs,
+                    run_number=run_number + 1,
+                    playwright_python_version=playwright_python_version,
+                    provider_name=provider_name,
+                )
+            except Exception as exc:
+                print(f'{run_number + 1} timed out : {exc}')
+                continue
 
     # Compute an aggregate of the data
     average_fps = np.mean([x['average_fps'] for x in all_data])
