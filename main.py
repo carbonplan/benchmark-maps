@@ -85,11 +85,13 @@ def run(
         """
     window._frameCounter = 0;
     window._timerStart = performance.now();
+    window._frameStarts = [];
     window._frameDurations = [];
     window._prevFrameTime = performance.now();
     window._rafId = requestAnimationFrame(function countFrames() {{
         const currentTime = performance.now();
         const duration = currentTime - window._prevFrameTime;
+        window._frameStarts.push(window._prevFrameTime)
         window._frameDurations.push(duration);
         window._prevFrameTime = currentTime;
         window._frameCounter++;
@@ -147,6 +149,7 @@ def run(
     print(f"[bold cyan]📸 Screenshot saved as '{path}'[/bold cyan]")
 
     # Get the captured frame durations and FPS
+    frame_starts = page.evaluate('window._frameStarts')
     frame_durations = page.evaluate('window._frameDurations')
     timer_end = page.evaluate('window._timerEnd')
     timer_start = page.evaluate('window._timerStart')
@@ -161,6 +164,7 @@ def run(
     # Record system metrics
     data = {
         'average_fps': round(fps, 0),
+        'frame_starts_in_ms': frame_starts,
         'frame_durations_in_ms': frame_durations,
         'request_data': request_data,
         'timer_start': timer_start,
