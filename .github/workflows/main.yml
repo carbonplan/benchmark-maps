@@ -14,11 +14,6 @@ on:
         required: true
         type: number
         default: 25
-      time-since-last-paint-threshold:
-        description: 'Time since last paint threshold'
-        required: true
-        type: number
-        default: 800
       upload-results:
         description: 'Upload results'
         required: true
@@ -32,6 +27,7 @@ concurrency:
 jobs:
   maps:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     defaults:
       run:
         shell: bash -l {0}
@@ -56,14 +52,14 @@ jobs:
       - name: Run test benchmarks
         if: github.event_name != 'workflow_dispatch'
         run: |
-          python main.py --runs 10 --time-since-last-paint-threshold 800
+          python main.py --runs 10
 
       - name: Run benchmarks using user inputs
         if: github.event_name == 'workflow_dispatch'
         run: |
           python main.py \
                 --runs ${{ github.event.inputs.runs }} \
-                --time-since-last-paint-threshold ${{ github.event.inputs.time-since-last-paint-threshold }}
+                --detect-provider
 
       - name: Create Pull Request
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.upload-results == 'true'
@@ -77,8 +73,8 @@ jobs:
             - Updates benchmark results with the latest data from runs triggered by: @${{ github.actor }}
             - Configurations used:
                 - Number of runs: ${{ github.event.inputs.runs }}
-                - Time since last paint threshold: ${{ github.event.inputs.time-since-last-paint-threshold }}
+
 
             [1]: https://github.com/peter-evans/create-pull-request
-          branch: update-data-${{ github.actor }}-${{ github.event.inputs.runs }}-${{ github.event.inputs.time-since-last-paint-threshold }}
+          branch: update-data-${{ github.actor }}-${{ github.event.inputs.runs }}
           delete-branch: true

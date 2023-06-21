@@ -13,6 +13,7 @@ concurrency:
 jobs:
   test-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
 
     steps:
       # For biggish images, github actions runs out of disk space.
