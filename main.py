@@ -43,6 +43,11 @@ def run(
     browser = playwright.chromium.launch()
     context = browser.new_context()
     page = context.new_page()
+    # set new CDPSession to get performance metrics
+    client = page.context.new_cdp_session(page)
+    client.send('Performance.enable')
+    # enable FPS counter and GPU metrics overlay
+    client.send('Overlay.setShowFPSCounter', {'show': True})
 
     # Log console messages
     page.on('console', log_console_message)
@@ -157,6 +162,7 @@ def run(
     timer_end = page.evaluate('window._timerEnd')
     timer_start = page.evaluate('window._timerStart')
     frame_counter = page.evaluate('window._frameCounter')
+    # chrome_devtools_performance_metrics = client.send('Performance.getMetrics')
     browser.close()
     fps = frame_counter / ((timer_end - timer_start) / 1000)
 
@@ -180,6 +186,7 @@ def run(
         'provider': provider_name,
         'browser_name': playwright.chromium.name,
         'browser_version': browser.version,
+        #'chrome_devtools_performance_metrics': chrome_devtools_performance_metrics,
     }
 
     all_data.append(data)
