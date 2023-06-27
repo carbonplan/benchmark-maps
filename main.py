@@ -41,7 +41,9 @@ def run(
 ):
     # Launch browser and create new page
     browser = playwright.chromium.launch()
-    context = browser.new_context()
+    context = browser.new_context(
+        record_video_dir='videos/', record_video_size={'width': 1280, 'height': 960}
+    )
     page = context.new_page()
     # set new CDPSession to get performance metrics
     client = page.context.new_cdp_session(page)
@@ -163,7 +165,10 @@ def run(
     timer_start = page.evaluate('window._timerStart')
     frame_counter = page.evaluate('window._frameCounter')
     # chrome_devtools_performance_metrics = client.send('Performance.getMetrics')
+
+    context.close()
     browser.close()
+
     fps = frame_counter / ((timer_end - timer_start) / 1000)
 
     # Get viewport size
