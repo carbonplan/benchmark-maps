@@ -43,7 +43,7 @@ def run(
     browser = playwright.chromium.launch()
     context = browser.new_context()
     # Start tracing before creating / navigating a page.
-    context.tracing.start(screenshots=True, snapshots=True, sources=True)   
+    context.tracing.start(screenshots=True, snapshots=True, sources=True)
     page = context.new_page()
     # set new CDPSession to get performance metrics
     client = page.context.new_cdp_session(page)
@@ -167,7 +167,7 @@ def run(
     # chrome_devtools_performance_metrics = client.send('Performance.getMetrics')
 
     # Stop tracing and export it into a zip archive.
-    context.tracing.stop(path = "trace.zip")
+    context.tracing.stop(path='trace.zip')
     browser.close()
 
     fps = frame_counter / ((timer_end - timer_start) / 1000)
