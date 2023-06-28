@@ -51,6 +51,8 @@ def run(
     # enable FPS counter and GPU metrics overlay
     client.send('Overlay.setShowFPSCounter', {'show': True})
 
+    browser.start_tracing(path='trace.json')
+
     # Log console messages
     page.on('console', log_console_message)
 
@@ -168,6 +170,7 @@ def run(
 
     # Stop tracing and export it into a zip archive.
     context.tracing.stop(path='trace.zip')
+    browser.stop_tracing()
     browser.close()
 
     fps = frame_counter / ((timer_end - timer_start) / 1000)
