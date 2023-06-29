@@ -24,6 +24,38 @@ now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
 all_data = []
 
 
+def request_data_from_trace(*, trace_data):
+    # Parse the JSON data
+    traceEvents = trace_data['traceEvents']
+
+    # Create a dictionary to hold the timings for each request
+    request_timings = {}
+
+    for event in traceEvents:
+        if event['name'] == 'ResourceSendRequest':
+            request_id = event['args']['data']['requestId']
+            request_url = event['args']['data']['url']
+            request_timings[request_id] = {
+                'method': event['args']['data']['requestMethod'],
+                'url': request_url,
+                'request_start': event['ts'],
+            }
+        elif event['name'] == 'ResourceReceiveResponse':
+            request_id = event['args']['data']['requestId']
+            if request_id in request_timings:
+                request_timings[request_id]['response_end'] = event['ts']
+        elif event['name'] == 'ResourceFinish':
+            request_id = event['args']['data']['requestId']
+            if request_id in request_timings:
+                request_timings[request_id]['total_response_time_in_ms'] = (
+                    event['ts'] - request_timings[request_id]['request_start']
+                ) / 1000
+
+    timings = list(request_timings.values())
+    timings.sort(key=lambda t: t['total_response_time_in_ms'], reverse=True)
+    return timings
+
+
 # Define console logging function
 def log_console_message(msg):
     print(f'Browser console: {msg}')
@@ -43,6 +75,7 @@ def run(
     browser = playwright.chromium.launch()
     context = browser.new_context()
     page = context.new_page()
+    browser.start_tracing(page=page, screenshots=True)
     # set new CDPSession to get performance metrics
     client = page.context.new_cdp_session(page)
     client.send('Performance.enable')
@@ -54,26 +87,6 @@ def run(
 
     # Start benchmark run
     print(f'[bold cyan]🚀 Starting benchmark run: {run_number}/{runs}...[/bold cyan]')
-
-    # Initialize request data storage
-    request_data = []
-
-    # Subscribe to "requestfinished" events
-    page.on(
-        'requestfinished',
-        lambda request: request_data.append(
-            {
-                'method': request.method,
-                'url': request.url,
-                'total_response_time_in_ms': request.timing['responseEnd']
-                - request.timing['requestStart'],
-                'response_end': request.timing['responseEnd'],
-                'request_start': request.timing['requestStart'],
-            }
-        )
-        if 'carbonplan-maps.s3.us-west-2.amazonaws.com/v2/demo' in request.url
-        else None,
-    )
 
     # Go to URL
     page.goto(url)
@@ -163,7 +176,11 @@ def run(
     timer_start = page.evaluate('window._timerStart')
     frame_counter = page.evaluate('window._frameCounter')
     # chrome_devtools_performance_metrics = client.send('Performance.getMetrics')
+    trace_json = browser.stop_tracing()
     browser.close()
+    trace_data = json.loads(trace_json)
+    request_data = request_data_from_trace(trace_data=trace_data)
+
     fps = frame_counter / ((timer_end - timer_start) / 1000)
 
     # Get viewport size
