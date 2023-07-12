@@ -3,7 +3,6 @@ import datetime
 import json
 import pathlib
 import subprocess
-import tempfile
 
 import numpy as np
 from cloud_detect import provider
@@ -11,11 +10,6 @@ from playwright.sync_api import sync_playwright
 from rich import box, print
 from rich.columns import Columns
 from rich.panel import Panel
-
-# Define directories for data and screenshots
-data_dir = pathlib.Path(__file__).parent / 'data'
-data_dir.mkdir(exist_ok=True, parents=True)
-temp_dir_path = pathlib.Path(tempfile.gettempdir())
 
 # Get current timestamp
 now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
@@ -38,11 +32,14 @@ def run(
     url: str = 'https://maps-demo-git-katamartin-benchmarking-carbonplan.vercel.app/',
     playwright_python_version: str | None = None,
     provider_name: str | None = None,
+    screenshot_dir: pathlib.Path,
+    trace_dir: pathlib.Path,
 ):
     # Launch browser and create new page
     browser = playwright.chromium.launch()
     context = browser.new_context()
     page = context.new_page()
+    browser.start_tracing(page=page, screenshots=True)
     # set new CDPSession to get performance metrics
     client = page.context.new_cdp_session(page)
     client.send('Performance.enable')
@@ -113,9 +110,8 @@ def run(
         () => {
         window._error = null;
         if (!window._map) {
-            console.error('window._map does not exist')
-            // TODO: we should at the least end the timer, but probably also do something
-            // else to indicate the test is failing...
+            window._error = 'window._map does not exist'
+            console.error(window._error)
             cancelAnimationFrame(window._rafId)
             window._timerEnd = performance.now()
         }
@@ -134,11 +130,8 @@ def run(
                 resolve()
             })
         }).catch((error) => {
-            // I think the only thing this would catch is an error executing window._map.onIdle()
             window._error = 'Error in page.evaluate: ' + error;
             console.error(window._error);
-            // TODO: we should at the least end the timer, but probably also do something
-            // else to indicate the test is failing...
             cancelAnimationFrame(window._rafId)
             window._timerEnd = performance.now()
         })
@@ -151,7 +144,7 @@ def run(
         raise Exception(error)
 
     # Save screenshot to temporary file
-    path = temp_dir_path / f'{now}-{run_number}.png'
+    path = screenshot_dir / f'{now}-{run_number}.png'
     page.screenshot(path=path)
     print(f"[bold cyan]📸 Screenshot saved as '{path}'[/bold cyan]")
 
@@ -162,6 +155,12 @@ def run(
     timer_end = page.evaluate('window._timerEnd')
     timer_start = page.evaluate('window._timerStart')
     frame_counter = page.evaluate('window._frameCounter')
+    trace_json = browser.stop_tracing()
+    trace_data = json.loads(trace_json)
+    json_path = trace_dir / f'{now}-{run_number}.json'
+    with open(json_path, 'w') as f:
+        json.dump(trace_data, f, indent=2)
+        print(f"[bold cyan]📊 Trace data saved as '{json_path}'[/bold cyan]")
     # chrome_devtools_performance_metrics = client.send('Performance.getMetrics')
     browser.close()
     fps = frame_counter / ((timer_end - timer_start) / 1000)
@@ -193,7 +192,14 @@ def run(
 
 
 # Define main function
-def main(*, runs: int, detect_provider: bool = False):
+def main(
+    *,
+    runs: int,
+    detect_provider: bool = False,
+    data_dir: pathlib.Path,
+    screenshot_dir: pathlib.Path,
+    trace_dir: pathlib.Path,
+):
     # Get Playwright versions
     playwright_python_version = subprocess.run(
         ['pip', 'show', 'playwright'],
@@ -215,6 +221,8 @@ def main(*, runs: int, detect_provider: bool = False):
                     run_number=run_number + 1,
                     playwright_python_version=playwright_python_version,
                     provider_name=provider_name,
+                    screenshot_dir=screenshot_dir,
+                    trace_dir=trace_dir,
                 )
             except Exception as exc:
                 print(f'{run_number + 1} timed out : {exc}')
@@ -322,4 +330,19 @@ if __name__ == '__main__':
         '--detect-provider', action='store_true', help='Detect provider', default=False
     )
     args = parser.parse_args()
-    main(runs=args.runs, detect_provider=args.detect_provider)
+    # Define directories for data and screenshots
+    root_dir = pathlib.Path(__file__).parent
+    data_dir = root_dir / 'data'
+    data_dir.mkdir(exist_ok=True, parents=True)
+    screenshot_dir = root_dir / 'playwright-screenshots'
+    screenshot_dir.mkdir(exist_ok=True, parents=True)
+    trace_dir = root_dir / 'chrome-devtools-traces'
+    trace_dir.mkdir(exist_ok=True, parents=True)
+
+    main(
+        runs=args.runs,
+        detect_provider=args.detect_provider,
+        data_dir=data_dir,
+        screenshot_dir=screenshot_dir,
+        trace_dir=trace_dir,
+    )
