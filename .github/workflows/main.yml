@@ -60,7 +60,7 @@ jobs:
           python main.py \
                 --runs ${{ github.event.inputs.runs }} \
                 --detect-provider
-      
+
       - name: Upload articants
         uses: actions/upload-artifact@v3
         with:
