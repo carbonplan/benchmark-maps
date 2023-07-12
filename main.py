@@ -155,7 +155,7 @@ def run(
         raise Exception(error)
 
     # Save screenshot to temporary file
-    path = temp_dir_path / f'{now}-{run_number}.png'
+    path = f'data/{now}-{run_number}.png'
     page.screenshot(path=path)
     print(f"[bold cyan]📸 Screenshot saved as '{path}'[/bold cyan]")
 
@@ -169,7 +169,7 @@ def run(
     # chrome_devtools_performance_metrics = client.send('Performance.getMetrics')
 
     # Stop tracing and export it into a zip archive.
-    context.tracing.stop(path='trace.zip')
+    context.tracing.stop(path=f'data/{now}-trace.zip')
     browser.stop_tracing()
     browser.close()
 
@@ -319,7 +319,7 @@ def main(*, runs: int, detect_provider: bool = False):
     print(Columns(configs, equal=True, expand=False))
 
     # Write the data to a json file
-    with open(data_dir / f'data-{now}.json', 'w') as outfile:
+    with open(data_dir / f'{now}-data.json', 'w') as outfile:
         json.dump(all_data, outfile, indent=4, sort_keys=True)
 
 

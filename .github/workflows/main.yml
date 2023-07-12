@@ -52,7 +52,7 @@ jobs:
       - name: Run test benchmarks
         if: github.event_name != 'workflow_dispatch'
         run: |
-          python main.py --runs 10
+          python main.py --runs 1
 
       - name: Run benchmarks using user inputs
         if: github.event_name == 'workflow_dispatch'
@@ -61,11 +61,12 @@ jobs:
                 --runs ${{ github.event.inputs.runs }} \
                 --detect-provider
 
-      - name: Upload articants
+      - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: playwright-trace
-          path: trace.zip
+          path: |
+            data
 
       - name: Create Pull Request
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.upload-results == 'true'
