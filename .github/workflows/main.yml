@@ -60,6 +60,12 @@ jobs:
           python main.py \
                 --runs ${{ github.event.inputs.runs }} \
                 --detect-provider
+      
+      - name: Upload articants
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-trace
+          path: trace.zip
 
       - name: Create Pull Request
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.upload-results == 'true'
