@@ -23,6 +23,40 @@ def log_console_message(msg):
     print(f'Browser console: {msg}')
 
 
+def request_data_from_chromium_trace(*, trace_data):
+    # Parse the JSON data
+    traceEvents = trace_data['traceEvents']
+
+    # Create a dictionary to hold the timings for each request
+    request_timings = {}
+
+    for event in traceEvents:
+        if event['name'] == 'ResourceSendRequest':
+            request_id = event['args']['data']['requestId']
+            request_url = event['args']['data']['url']
+            if 'carbonplan-maps.s3.us-west-2.amazonaws.com/v2/demo' not in request_url:
+                continue
+            request_timings[request_id] = {
+                'method': event['args']['data']['requestMethod'],
+                'url': request_url,
+                'request_start': event['ts'],
+            }
+        elif event['name'] == 'ResourceReceiveResponse':
+            request_id = event['args']['data']['requestId']
+            if request_id in request_timings:
+                request_timings[request_id]['response_end'] = event['ts']
+        elif event['name'] == 'ResourceFinish':
+            request_id = event['args']['data']['requestId']
+            if request_id in request_timings:
+                request_timings[request_id]['total_response_time_in_ms'] = (
+                    event['ts'] - request_timings[request_id]['request_start']
+                ) / 1000
+
+    timings = list(request_timings.values())
+    timings.sort(key=lambda t: t['total_response_time_in_ms'], reverse=True)
+    return timings
+
+
 # Define main benchmarking function
 def run(
     *,
@@ -161,8 +195,9 @@ def run(
     with open(json_path, 'w') as f:
         json.dump(trace_data, f, indent=2)
         print(f"[bold cyan]📊 Trace data saved as '{json_path}'[/bold cyan]")
-    # chrome_devtools_performance_metrics = client.send('Performance.getMetrics')
+
     browser.close()
+    chromium_trace_request_data = request_data_from_chromium_trace(trace_data=trace_data)
     fps = frame_counter / ((timer_end - timer_start) / 1000)
 
     # Get viewport size
@@ -176,6 +211,7 @@ def run(
         'frame_ends_in_ms': frame_ends,
         'frame_durations_in_ms': frame_durations,
         'request_data': request_data,
+        'chromium_trace_request_data': chromium_trace_request_data,
         'timer_start': timer_start,
         'timer_end': timer_end,
         'total_duration_in_ms': timer_end - timer_start,
