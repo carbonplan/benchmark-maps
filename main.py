@@ -23,6 +23,63 @@ def log_console_message(msg):
     print(f'Browser console: {msg}')
 
 
+def calculate_frame_durations_and_fps(*, trace_events: list):
+    """
+    Calculate frame durations and frames per second (FPS) from a list of Chromium trace events.
+
+    Parameters
+    ----------
+    trace_events : list
+        The list of trace events.
+
+    Returns
+    -------
+    frame_durations_s : list
+        The list of frame durations in seconds.
+    fps_values : list
+        The list of frames per second (FPS) values.
+    frame_timestamps_micros : list
+        The list of timestamps corresponding to the start of each frame.
+    """
+
+    # Chromium trace events contain a 'name' field that indicates the type of the event.
+    # 'Swap' events signify that a new frame is ready to be displayed. The 'ph' field
+    # indicates the phase of the event: 'b' for begin and 'e' for end. We're interested in
+    # the 'b' (begin) phase, which signifies the start of a new frame.
+
+    # Filter out 'Swap' events that signify the start of a new frame
+    swap_begin_events = [
+        event for event in trace_events if event['name'] == 'Swap' and event['ph'] == 'b'
+    ]
+
+    # Initialize lists to hold the frame durations in seconds, FPS values, and frame timestamps
+    frame_durations_s = []
+    frame_timestamps_micros = []
+    fps_values = []
+
+    # Iterate over the 'Swap' events, starting from the second one
+    for i in range(1, len(swap_begin_events)):
+        # Calculate the duration of each frame in microseconds as the difference in timestamps
+        # between consecutive 'Swap' events
+        duration_micros = swap_begin_events[i]['ts'] - swap_begin_events[i - 1]['ts']
+
+        # Exclude instances where the frame duration is zero, which could occur if two 'Swap'
+        # events have the same timestamp due to simultaneous frame swaps or inaccuracies in
+        # the timestamp recording
+        if duration_micros > 0:
+            # Convert the frame duration to seconds
+            duration_s = duration_micros / 1e6
+            frame_durations_s.append(duration_s)
+
+            # Add the timestamp of the 'Swap' event, which signifies the start of the frame
+            frame_timestamps_micros.append(swap_begin_events[i]['ts'])
+
+            # Calculate the frames per second (FPS) as the reciprocal of the frame duration
+            fps_values.append(1 / duration_s)
+
+    return frame_durations_s, fps_values, frame_timestamps_micros
+
+
 def extract_request_data(*, trace_events, url_filter: str = None):
     """
     Extract request data from a list of Chromium trace events, optionally filtering by URL.
@@ -229,6 +286,10 @@ def run(
         trace_events=trace_data['traceEvents'], url_filter=url_filter
     )
 
+    frame_durations_s, fps_values, frame_timestamps_micros = calculate_frame_durations_and_fps(
+        trace_events=trace_data['traceEvents']
+    )
+
     # Record system metrics
     data = {
         'average_fps': round(fps, 0),
@@ -237,6 +298,9 @@ def run(
         'frame_durations_in_ms': frame_durations,
         'request_data': request_data,
         'chromium_trace_request_data': filtered_request_data,
+        'chromium_trace_frame_durations_in_s': frame_durations_s,
+        'chromium_trace_fps': fps_values,
+        'chromium_trace_frame_timestamps_in_micros': frame_timestamps_micros,
         'timer_start': timer_start,
         'timer_end': timer_end,
         'total_duration_in_ms': timer_end - timer_start,
