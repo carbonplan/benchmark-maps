@@ -23,38 +23,64 @@ def log_console_message(msg):
     print(f'Browser console: {msg}')
 
 
-def request_data_from_chromium_trace(*, trace_data):
-    # Parse the JSON data
-    traceEvents = trace_data['traceEvents']
+def extract_request_data(*, trace_events, url_filter: str = None):
+    """
+    Extract request data from a list of Chromium trace events, optionally filtering by URL.
 
-    # Create a dictionary to hold the timings for each request
-    request_timings = {}
+    Parameters
+    ----------
 
-    for event in traceEvents:
+    trace_events: list
+         The list of trace events.
+    url_filter : str, optional
+        If specified, only include requests where the URL contains this string.
+
+    Returns
+    -------
+    request_data : list of dictionaries, each containing information about a request.
+        A list of dictionaries, each containing information about a request.
+    """
+    send_request_events = {}
+    finish_request_events = {}
+
+    # Collect 'ResourceSendRequest' and 'ResourceFinish' events, indexed by request ID
+    for event in trace_events:
         if event['name'] == 'ResourceSendRequest':
             request_id = event['args']['data']['requestId']
-            request_url = event['args']['data']['url']
-            if 'carbonplan-maps.s3.us-west-2.amazonaws.com/v2/demo' not in request_url:
-                continue
-            request_timings[request_id] = {
-                'method': event['args']['data']['requestMethod'],
-                'url': request_url,
-                'request_start': event['ts'],
-            }
-        elif event['name'] == 'ResourceReceiveResponse':
-            request_id = event['args']['data']['requestId']
-            if request_id in request_timings:
-                request_timings[request_id]['response_end'] = event['ts']
+            send_request_events[request_id] = event
         elif event['name'] == 'ResourceFinish':
             request_id = event['args']['data']['requestId']
-            if request_id in request_timings:
-                request_timings[request_id]['total_response_time_in_ms'] = (
-                    event['ts'] - request_timings[request_id]['request_start']
-                ) / 1000
+            finish_request_events[request_id] = event
 
-    timings = list(request_timings.values())
-    timings.sort(key=lambda t: t['total_response_time_in_ms'], reverse=True)
-    return timings
+    request_data = []
+
+    # Combine the send and finish events for each request
+    for request_id, send_event in send_request_events.items():
+        finish_event = finish_request_events.get(request_id)
+        if finish_event is not None:
+            url = send_event['args']['data']['url']
+            # If a URL filter is specified, skip URLs that don't contain the filter string
+            if url_filter is not None and url_filter not in url:
+                continue
+
+            method = send_event['args']['data']['requestMethod']
+            total_response_time_ms = (
+                finish_event['ts'] - send_event['ts']
+            ) / 1e3  # Convert to milliseconds
+            response_end = finish_event['ts'] / 1e3  # Convert to milliseconds
+            request_start = send_event['ts'] / 1e3  # Convert to milliseconds
+
+            request_data.append(
+                {
+                    'method': method,
+                    'url': url,
+                    'total_response_time_ms': total_response_time_ms,
+                    'response_end': response_end,
+                    'request_start': request_start,
+                }
+            )
+
+    return request_data
 
 
 # Define main benchmarking function
@@ -197,12 +223,11 @@ def run(
         print(f"[bold cyan]📊 Trace data saved as '{json_path}'[/bold cyan]")
 
     browser.close()
-    chromium_trace_request_data = request_data_from_chromium_trace(trace_data=trace_data)
     fps = frame_counter / ((timer_end - timer_start) / 1000)
-
-    # Get viewport size
-    viewport_size = page.viewport_size
-    screen_resolution = f'{viewport_size["width"]}x{viewport_size["height"]}'
+    url_filter = 'carbonplan-maps.s3.us-west-2.amazonaws.com/v2/demo'
+    filtered_request_data = extract_request_data(
+        trace_events=trace_data['traceEvents'], url_filter=url_filter
+    )
 
     # Record system metrics
     data = {
@@ -211,17 +236,14 @@ def run(
         'frame_ends_in_ms': frame_ends,
         'frame_durations_in_ms': frame_durations,
         'request_data': request_data,
-        'chromium_trace_request_data': chromium_trace_request_data,
+        'chromium_trace_request_data': filtered_request_data,
         'timer_start': timer_start,
         'timer_end': timer_end,
         'total_duration_in_ms': timer_end - timer_start,
-        'viewport_size': viewport_size,
-        'screen_resolution': screen_resolution,
         'playwright_python_version': playwright_python_version,
         'provider': provider_name,
         'browser_name': playwright.chromium.name,
         'browser_version': browser.version,
-        #'chrome_devtools_performance_metrics': chrome_devtools_performance_metrics,
     }
 
     all_data.append(data)
