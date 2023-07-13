@@ -3,7 +3,6 @@ import datetime
 import json
 import pathlib
 import subprocess
-import tempfile
 
 import numpy as np
 from cloud_detect import provider
@@ -11,11 +10,6 @@ from playwright.sync_api import sync_playwright
 from rich import box, print
 from rich.columns import Columns
 from rich.panel import Panel
-
-# Define directories for data and screenshots
-data_dir = pathlib.Path(__file__).parent / 'data'
-data_dir.mkdir(exist_ok=True, parents=True)
-temp_dir_path = pathlib.Path(tempfile.gettempdir())
 
 # Get current timestamp
 now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
@@ -29,6 +23,123 @@ def log_console_message(msg):
     print(f'Browser console: {msg}')
 
 
+def calculate_frame_durations_and_fps(*, trace_events: list):
+    """
+    Calculate frame durations and frames per second (FPS) from a list of Chromium trace events.
+
+    Parameters
+    ----------
+    trace_events : list
+        The list of trace events.
+
+    Returns
+    -------
+    frame_durations_s : list
+        The list of frame durations in seconds.
+    fps_values : list
+        The list of frames per second (FPS) values.
+    frame_timestamps_micros : list
+        The list of timestamps corresponding to the start of each frame.
+    """
+
+    # Chromium trace events contain a 'name' field that indicates the type of the event.
+    # 'Swap' events signify that a new frame is ready to be displayed. The 'ph' field
+    # indicates the phase of the event: 'b' for begin and 'e' for end. We're interested in
+    # the 'b' (begin) phase, which signifies the start of a new frame.
+
+    # Filter out 'Swap' events that signify the start of a new frame
+    swap_begin_events = [
+        event for event in trace_events if event['name'] == 'Swap' and event['ph'] == 'b'
+    ]
+
+    # Initialize lists to hold the frame durations in seconds, FPS values, and frame timestamps
+    frame_durations_s = []
+    frame_timestamps_micros = []
+    fps_values = []
+
+    # Iterate over the 'Swap' events, starting from the second one
+    for i in range(1, len(swap_begin_events)):
+        # Calculate the duration of each frame in microseconds as the difference in timestamps
+        # between consecutive 'Swap' events
+        duration_micros = swap_begin_events[i]['ts'] - swap_begin_events[i - 1]['ts']
+
+        # Exclude instances where the frame duration is zero, which could occur if two 'Swap'
+        # events have the same timestamp due to simultaneous frame swaps or inaccuracies in
+        # the timestamp recording
+        if duration_micros > 0:
+            # Convert the frame duration to seconds
+            duration_s = duration_micros / 1e6
+            frame_durations_s.append(duration_s)
+
+            # Add the timestamp of the 'Swap' event, which signifies the start of the frame
+            frame_timestamps_micros.append(swap_begin_events[i]['ts'])
+
+            # Calculate the frames per second (FPS) as the reciprocal of the frame duration
+            fps_values.append(1 / duration_s)
+
+    return frame_durations_s, fps_values, frame_timestamps_micros
+
+
+def extract_request_data(*, trace_events, url_filter: str = None):
+    """
+    Extract request data from a list of Chromium trace events, optionally filtering by URL.
+
+    Parameters
+    ----------
+
+    trace_events: list
+         The list of trace events.
+    url_filter : str, optional
+        If specified, only include requests where the URL contains this string.
+
+    Returns
+    -------
+    request_data : list of dictionaries, each containing information about a request.
+        A list of dictionaries, each containing information about a request.
+    """
+    send_request_events = {}
+    finish_request_events = {}
+
+    # Collect 'ResourceSendRequest' and 'ResourceFinish' events, indexed by request ID
+    for event in trace_events:
+        if event['name'] == 'ResourceSendRequest':
+            request_id = event['args']['data']['requestId']
+            send_request_events[request_id] = event
+        elif event['name'] == 'ResourceFinish':
+            request_id = event['args']['data']['requestId']
+            finish_request_events[request_id] = event
+
+    request_data = []
+
+    # Combine the send and finish events for each request
+    for request_id, send_event in send_request_events.items():
+        finish_event = finish_request_events.get(request_id)
+        if finish_event is not None:
+            url = send_event['args']['data']['url']
+            # If a URL filter is specified, skip URLs that don't contain the filter string
+            if url_filter is not None and url_filter not in url:
+                continue
+
+            method = send_event['args']['data']['requestMethod']
+            total_response_time_ms = (
+                finish_event['ts'] - send_event['ts']
+            ) / 1e3  # Convert to milliseconds
+            response_end = finish_event['ts'] / 1e3  # Convert to milliseconds
+            request_start = send_event['ts'] / 1e3  # Convert to milliseconds
+
+            request_data.append(
+                {
+                    'method': method,
+                    'url': url,
+                    'total_response_time_ms': total_response_time_ms,
+                    'response_end': response_end,
+                    'request_start': request_start,
+                }
+            )
+
+    return request_data
+
+
 # Define main benchmarking function
 def run(
     *,
@@ -38,11 +149,14 @@ def run(
     url: str = 'https://maps-demo-git-katamartin-benchmarking-carbonplan.vercel.app/',
     playwright_python_version: str | None = None,
     provider_name: str | None = None,
+    screenshot_dir: pathlib.Path,
+    trace_dir: pathlib.Path,
 ):
     # Launch browser and create new page
     browser = playwright.chromium.launch()
     context = browser.new_context()
     page = context.new_page()
+    browser.start_tracing(page=page, screenshots=True)
     # set new CDPSession to get performance metrics
     client = page.context.new_cdp_session(page)
     client.send('Performance.enable')
@@ -113,9 +227,8 @@ def run(
         () => {
         window._error = null;
         if (!window._map) {
-            console.error('window._map does not exist')
-            // TODO: we should at the least end the timer, but probably also do something
-            // else to indicate the test is failing...
+            window._error = 'window._map does not exist'
+            console.error(window._error)
             cancelAnimationFrame(window._rafId)
             window._timerEnd = performance.now()
         }
@@ -134,11 +247,8 @@ def run(
                 resolve()
             })
         }).catch((error) => {
-            // I think the only thing this would catch is an error executing window._map.onIdle()
             window._error = 'Error in page.evaluate: ' + error;
             console.error(window._error);
-            // TODO: we should at the least end the timer, but probably also do something
-            // else to indicate the test is failing...
             cancelAnimationFrame(window._rafId)
             window._timerEnd = performance.now()
         })
@@ -151,7 +261,7 @@ def run(
         raise Exception(error)
 
     # Save screenshot to temporary file
-    path = temp_dir_path / f'{now}-{run_number}.png'
+    path = screenshot_dir / f'{now}-{run_number}.png'
     page.screenshot(path=path)
     print(f"[bold cyan]📸 Screenshot saved as '{path}'[/bold cyan]")
 
@@ -162,13 +272,23 @@ def run(
     timer_end = page.evaluate('window._timerEnd')
     timer_start = page.evaluate('window._timerStart')
     frame_counter = page.evaluate('window._frameCounter')
-    # chrome_devtools_performance_metrics = client.send('Performance.getMetrics')
+    trace_json = browser.stop_tracing()
+    trace_data = json.loads(trace_json)
+    json_path = trace_dir / f'{now}-{run_number}.json'
+    with open(json_path, 'w') as f:
+        json.dump(trace_data, f, indent=2)
+        print(f"[bold cyan]📊 Trace data saved as '{json_path}'[/bold cyan]")
+
     browser.close()
     fps = frame_counter / ((timer_end - timer_start) / 1000)
+    url_filter = 'carbonplan-maps.s3.us-west-2.amazonaws.com/v2/demo'
+    filtered_request_data = extract_request_data(
+        trace_events=trace_data['traceEvents'], url_filter=url_filter
+    )
 
-    # Get viewport size
-    viewport_size = page.viewport_size
-    screen_resolution = f'{viewport_size["width"]}x{viewport_size["height"]}'
+    frame_durations_s, fps_values, frame_timestamps_micros = calculate_frame_durations_and_fps(
+        trace_events=trace_data['traceEvents']
+    )
 
     # Record system metrics
     data = {
@@ -177,23 +297,31 @@ def run(
         'frame_ends_in_ms': frame_ends,
         'frame_durations_in_ms': frame_durations,
         'request_data': request_data,
+        'chromium_trace_request_data': filtered_request_data,
+        'chromium_trace_frame_durations_in_s': frame_durations_s,
+        'chromium_trace_fps': fps_values,
+        'chromium_trace_frame_timestamps_in_micros': frame_timestamps_micros,
         'timer_start': timer_start,
         'timer_end': timer_end,
         'total_duration_in_ms': timer_end - timer_start,
-        'viewport_size': viewport_size,
-        'screen_resolution': screen_resolution,
         'playwright_python_version': playwright_python_version,
         'provider': provider_name,
         'browser_name': playwright.chromium.name,
         'browser_version': browser.version,
-        #'chrome_devtools_performance_metrics': chrome_devtools_performance_metrics,
     }
 
     all_data.append(data)
 
 
 # Define main function
-def main(*, runs: int, detect_provider: bool = False):
+def main(
+    *,
+    runs: int,
+    detect_provider: bool = False,
+    data_dir: pathlib.Path,
+    screenshot_dir: pathlib.Path,
+    trace_dir: pathlib.Path,
+):
     # Get Playwright versions
     playwright_python_version = subprocess.run(
         ['pip', 'show', 'playwright'],
@@ -215,6 +343,8 @@ def main(*, runs: int, detect_provider: bool = False):
                     run_number=run_number + 1,
                     playwright_python_version=playwright_python_version,
                     provider_name=provider_name,
+                    screenshot_dir=screenshot_dir,
+                    trace_dir=trace_dir,
                 )
             except Exception as exc:
                 print(f'{run_number + 1} timed out : {exc}')
@@ -322,4 +452,19 @@ if __name__ == '__main__':
         '--detect-provider', action='store_true', help='Detect provider', default=False
     )
     args = parser.parse_args()
-    main(runs=args.runs, detect_provider=args.detect_provider)
+    # Define directories for data and screenshots
+    root_dir = pathlib.Path(__file__).parent
+    data_dir = root_dir / 'data'
+    data_dir.mkdir(exist_ok=True, parents=True)
+    screenshot_dir = root_dir / 'playwright-screenshots'
+    screenshot_dir.mkdir(exist_ok=True, parents=True)
+    trace_dir = root_dir / 'chrome-devtools-traces'
+    trace_dir.mkdir(exist_ok=True, parents=True)
+
+    main(
+        runs=args.runs,
+        detect_provider=args.detect_provider,
+        data_dir=data_dir,
+        screenshot_dir=screenshot_dir,
+        trace_dir=trace_dir,
+    )
