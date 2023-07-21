@@ -10,6 +10,9 @@ dependencies:
   - requests
   - typing-extensions
   - rich
+  - hvplot
+  - pre-commit
+  - jupyterlab
   - pip:
       - pytest-playwright
       - cloud-detect
