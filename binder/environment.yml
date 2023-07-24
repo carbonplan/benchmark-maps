@@ -10,6 +10,8 @@ dependencies:
   - requests
   - typing-extensions
   - rich
+  - distributed
+  - coiled
   - pip:
       - pytest-playwright
       - cloud-detect
