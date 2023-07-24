@@ -37,7 +37,7 @@ python main.py
 To run the benchmark using `coiled`, you can run the following command:
 
 ```bash
-coiled run --container quay.io/carbonplan/benchmark-maps bash main.sh
+coiled run --container quay.io/carbonplan/benchmark-maps --file main.py bash main.sh
 ```
 
 ## license
