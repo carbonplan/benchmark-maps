@@ -23,63 +23,6 @@ def log_console_message(msg):
     print(f'Browser console: {msg}')
 
 
-def calculate_frame_durations_and_fps(*, trace_events: list):
-    """
-    Calculate frame durations and frames per second (FPS) from a list of Chromium trace events.
-
-    Parameters
-    ----------
-    trace_events : list
-        The list of trace events.
-
-    Returns
-    -------
-    frame_durations_s : list
-        The list of frame durations in seconds.
-    fps_values : list
-        The list of frames per second (FPS) values.
-    frame_timestamps_micros : list
-        The list of timestamps corresponding to the start of each frame.
-    """
-
-    # Chromium trace events contain a 'name' field that indicates the type of the event.
-    # 'Swap' events signify that a new frame is ready to be displayed. The 'ph' field
-    # indicates the phase of the event: 'b' for begin and 'e' for end. We're interested in
-    # the 'b' (begin) phase, which signifies the start of a new frame.
-
-    # Filter out 'Swap' events that signify the start of a new frame
-    swap_begin_events = [
-        event for event in trace_events if event['name'] == 'Swap' and event['ph'] == 'b'
-    ]
-
-    # Initialize lists to hold the frame durations in seconds, FPS values, and frame timestamps
-    frame_durations_s = []
-    frame_timestamps_micros = []
-    fps_values = []
-
-    # Iterate over the 'Swap' events, starting from the second one
-    for i in range(1, len(swap_begin_events)):
-        # Calculate the duration of each frame in microseconds as the difference in timestamps
-        # between consecutive 'Swap' events
-        duration_micros = swap_begin_events[i]['ts'] - swap_begin_events[i - 1]['ts']
-
-        # Exclude instances where the frame duration is zero, which could occur if two 'Swap'
-        # events have the same timestamp due to simultaneous frame swaps or inaccuracies in
-        # the timestamp recording
-        if duration_micros > 0:
-            # Convert the frame duration to seconds
-            duration_s = duration_micros / 1e6
-            frame_durations_s.append(duration_s)
-
-            # Add the timestamp of the 'Swap' event, which signifies the start of the frame
-            frame_timestamps_micros.append(swap_begin_events[i]['ts'])
-
-            # Calculate the frames per second (FPS) as the reciprocal of the frame duration
-            fps_values.append(1 / duration_s)
-
-    return frame_durations_s, fps_values, frame_timestamps_micros
-
-
 def extract_request_data(*, trace_events, url_filter: str = None):
     """
     Extract request data from a list of Chromium trace events, optionally filtering by URL.
@@ -169,26 +112,6 @@ def run(
     # Start benchmark run
     print(f'[bold cyan]🚀 Starting benchmark run: {run_number}/{runs}...[/bold cyan]')
 
-    # Initialize request data storage
-    request_data = []
-
-    # Subscribe to "requestfinished" events
-    page.on(
-        'requestfinished',
-        lambda request: request_data.append(
-            {
-                'method': request.method,
-                'url': request.url,
-                'total_response_time_in_ms': request.timing['responseEnd']
-                - request.timing['requestStart'],
-                'response_end': request.timing['responseEnd'],
-                'request_start': request.timing['requestStart'],
-            }
-        )
-        if 'carbonplan-maps.s3.us-west-2.amazonaws.com/v2/demo' in request.url
-        else None,
-    )
-
     # Go to URL
     page.goto(url)
 
@@ -265,13 +188,9 @@ def run(
     page.screenshot(path=path)
     print(f"[bold cyan]📸 Screenshot saved as '{path}'[/bold cyan]")
 
-    # Get the captured frame durations and FPS
-    frame_starts = page.evaluate('window._frameStarts')
-    frame_ends = page.evaluate('window._frameEnds')
-    frame_durations = page.evaluate('window._frameDurations')
     timer_end = page.evaluate('window._timerEnd')
     timer_start = page.evaluate('window._timerStart')
-    frame_counter = page.evaluate('window._frameCounter')
+
     trace_json = browser.stop_tracing()
     trace_data = json.loads(trace_json)
     json_path = trace_dir / f'{now}-{run_number}.json'
@@ -280,27 +199,14 @@ def run(
         print(f"[bold cyan]📊 Trace data saved as '{json_path}'[/bold cyan]")
 
     browser.close()
-    fps = frame_counter / ((timer_end - timer_start) / 1000)
     url_filter = 'carbonplan-maps.s3.us-west-2.amazonaws.com/v2/demo'
     filtered_request_data = extract_request_data(
         trace_events=trace_data['traceEvents'], url_filter=url_filter
     )
 
-    frame_durations_s, fps_values, frame_timestamps_micros = calculate_frame_durations_and_fps(
-        trace_events=trace_data['traceEvents']
-    )
-
     # Record system metrics
     data = {
-        'average_fps': round(fps, 0),
-        'frame_starts_in_ms': frame_starts,
-        'frame_ends_in_ms': frame_ends,
-        'frame_durations_in_ms': frame_durations,
-        'request_data': request_data,
-        'chromium_trace_request_data': filtered_request_data,
-        'chromium_trace_frame_durations_in_s': frame_durations_s,
-        'chromium_trace_fps': fps_values,
-        'chromium_trace_frame_timestamps_in_micros': frame_timestamps_micros,
+        'request_data': filtered_request_data,
         'timer_start': timer_start,
         'timer_end': timer_end,
         'total_duration_in_ms': timer_end - timer_start,
@@ -351,58 +257,21 @@ def main(
                 continue
 
     # Compute an aggregate of the data
-    average_fps = np.mean([x['average_fps'] for x in all_data])
-    average_frame_duration = np.mean(
-        [x['total_duration_in_ms'] / x['average_fps'] for x in all_data]
-    )
+
     average_total_duration = np.mean([x['total_duration_in_ms'] for x in all_data])
 
     total_response_times = []
 
     for data in all_data:
-        total_response_times.extend(
-            request_data['total_response_time_in_ms'] for request_data in data['request_data']
-        )
+        for request_data in data['request_data']:
+            total_response_times.append(request_data['total_response_time_ms'])
+
     average_request_duration = np.mean(total_response_times)
     median_request_duration = np.median(total_response_times)
-    frame_duration_percentiles = np.percentile(total_response_times, [25, 50, 75, 90])
 
     # Display results
     configs = [
         Panel(f'[bold green]🔄 Number of runs: {runs}[/bold green]', box=box.DOUBLE, expand=False)
-    ]
-
-    frame_results = [
-        Panel(
-            f'[bold green]📊 Average FPS: {average_fps:.2f}[/bold green]',
-            box=box.DOUBLE,
-            expand=False,
-        ),
-        Panel(
-            f'[bold green]⏱️ Average frame duration: {average_frame_duration:.2f} ms[/bold green]',
-            box=box.DOUBLE,
-            expand=False,
-        ),
-        Panel(
-            f'[bold green]⏱️ 25th percentile frame duration: {frame_duration_percentiles[0]:.2f} ms[/bold green]',
-            box=box.DOUBLE,
-            expand=False,
-        ),
-        Panel(
-            f'[bold green]⏱️ 50th percentile frame duration: {frame_duration_percentiles[1]:.2f} ms[/bold green]',
-            box=box.DOUBLE,
-            expand=False,
-        ),
-        Panel(
-            f'[bold green]⏱️ 75th percentile frame duration: {frame_duration_percentiles[2]:.2f} ms[/bold green]',
-            box=box.DOUBLE,
-            expand=False,
-        ),
-        Panel(
-            f'[bold green]⏱️ 90th percentile frame duration: {frame_duration_percentiles[3]:.2f} ms[/bold green]',
-            box=box.DOUBLE,
-            expand=False,
-        ),
     ]
 
     duration_results = [
@@ -427,8 +296,6 @@ def main(
     ]
 
     # Print results
-    print(Panel('[bold blue]Frame Results[/bold blue]', box=box.DOUBLE, expand=False))
-    print(Columns(frame_results, equal=True, expand=False))
 
     print(Panel('[bold blue]Request Results[/bold blue]', box=box.DOUBLE, expand=False))
     print(Columns(request_results, equal=True, expand=False))
