@@ -122,29 +122,14 @@ def run(
     # click the button that is a sibling of the div with the text "Display".
     page.click('//div[text()="Display"]/following-sibling::button')
 
-    # Start frame counting
+    # Start timer
     page.evaluate(
         """
-    window._frameCounter = 0;
     window._timerStart = performance.now();
-    window._frameStarts = [];
-    window._frameEnds = [];
-    window._frameDurations = [];
-    window._prevFrameTime = performance.now();
-    window._rafId = requestAnimationFrame(function countFrames() {{
-        const currentTime = performance.now();
-        const duration = currentTime - window._prevFrameTime;
-        window._frameStarts.push(window._prevFrameTime)
-        window._frameEnds.push(currentTime)
-        window._frameDurations.push(duration);
-        window._prevFrameTime = currentTime;
-        window._frameCounter++;
-        window._rafId = requestAnimationFrame(countFrames);
-    }});
     """
     )
 
-    # Wait for the map to be idle and then stop frame counting
+    # Wait for the map to be idle and then stop timer
     page.evaluate(
         """
         () => {
@@ -152,7 +137,6 @@ def run(
         if (!window._map) {
             window._error = 'window._map does not exist'
             console.error(window._error)
-            cancelAnimationFrame(window._rafId)
             window._timerEnd = performance.now()
         }
 
@@ -165,14 +149,12 @@ def run(
             }, THRESHOLD)
             window._map.onIdle(() => {
                 console.log('window._map.onIdle callback called')
-                cancelAnimationFrame(window._rafId)
                 window._timerEnd = performance.now()
                 resolve()
             })
         }).catch((error) => {
             window._error = 'Error in page.evaluate: ' + error;
             console.error(window._error);
-            cancelAnimationFrame(window._rafId)
             window._timerEnd = performance.now()
         })
         }
@@ -263,9 +245,9 @@ def main(
     total_response_times = []
 
     for data in all_data:
-        for request_data in data['request_data']:
-            total_response_times.append(request_data['total_response_time_ms'])
-
+        total_response_times.extend(
+            request_data['total_response_time_ms'] for request_data in data['request_data']
+        )
     average_request_duration = np.mean(total_response_times)
     median_request_duration = np.median(total_response_times)
 
