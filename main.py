@@ -94,6 +94,8 @@ def run(
     provider_name: str | None = None,
     screenshot_dir: pathlib.Path,
     trace_dir: pathlib.Path,
+    operation: str | None = None,
+    zoom_level: int | None = None,
 ):
     # Launch browser and create new page
     browser = playwright.chromium.launch()
@@ -128,6 +130,25 @@ def run(
     window._timerStart = performance.now();
     """
     )
+
+    # Perform operation
+    supported_operations = ['zoom_in', 'zoom_out']
+    if operation and operation not in supported_operations:
+        raise ValueError(
+            f'Invalid operation: {operation}. Supported operations are: {supported_operations}'
+        )
+
+    if operation and operation.startswith('zoom') and zoom_level is None:
+        raise ValueError(f'Invalid zoom level: {zoom_level}. Must be an integer greater than 0.')
+
+    page.focus('.mapboxgl-canvas')
+    page.click('.mapboxgl-canvas')
+    if zoom_level:
+        for _ in range(zoom_level):
+            if operation == 'zoom_in':
+                page.keyboard.press('=')
+            elif operation == 'zoom_out':
+                page.keyboard.press('-')
 
     # Wait for the map to be idle and then stop timer
     page.evaluate(
@@ -166,7 +187,11 @@ def run(
         raise Exception(error)
 
     # Save screenshot to temporary file
-    path = screenshot_dir / f'{now}-{run_number}.png'
+    path = (
+        screenshot_dir / f'{now}-{run_number}.png'
+        if operation is None
+        else screenshot_dir / f'{now}-{run_number}-{operation}.png'
+    )
     page.screenshot(path=path)
     print(f"[bold cyan]📸 Screenshot saved as '{path}'[/bold cyan]")
 
@@ -175,7 +200,11 @@ def run(
 
     trace_json = browser.stop_tracing()
     trace_data = json.loads(trace_json)
-    json_path = trace_dir / f'{now}-{run_number}.json'
+    json_path = (
+        trace_dir / f'{now}-{run_number}.json'
+        if operation is None
+        else trace_dir / f'{now}-{run_number}-{operation}.json'
+    )
     with open(json_path, 'w') as f:
         json.dump(trace_data, f, indent=2)
         print(f"[bold cyan]📊 Trace data saved as '{json_path}'[/bold cyan]")
@@ -209,6 +238,8 @@ def main(
     data_dir: pathlib.Path,
     screenshot_dir: pathlib.Path,
     trace_dir: pathlib.Path,
+    operation: str | None = None,
+    zoom_level: int | None = None,
 ):
     # Get Playwright versions
     playwright_python_version = subprocess.run(
@@ -233,6 +264,8 @@ def main(
                     provider_name=provider_name,
                     screenshot_dir=screenshot_dir,
                     trace_dir=trace_dir,
+                    operation=operation,
+                    zoom_level=zoom_level,
                 )
             except Exception as exc:
                 print(f'{run_number + 1} timed out : {exc}')
@@ -289,7 +322,12 @@ def main(
     print(Columns(configs, equal=True, expand=False))
 
     # Write the data to a json file
-    with open(data_dir / f'data-{now}.json', 'w') as outfile:
+    data_path = (
+        data_dir / f'data-{now}.json'
+        if operation is None
+        else data_dir / f'data-{now}-{operation}.json'
+    )
+    with open(data_path, 'w') as outfile:
         json.dump(all_data, outfile, indent=4, sort_keys=True)
 
 
@@ -300,6 +338,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '--detect-provider', action='store_true', help='Detect provider', default=False
     )
+    parser.add_argument('--operation', type=str, default=None, help='Operation to perform')
+    parser.add_argument('--zoom-level', type=int, default=None, help='Zoom level to perform')
+
     args = parser.parse_args()
     # Define directories for data and screenshots
     root_dir = pathlib.Path(__file__).parent
@@ -316,4 +357,6 @@ if __name__ == '__main__':
         data_dir=data_dir,
         screenshot_dir=screenshot_dir,
         trace_dir=trace_dir,
+        operation=args.operation,
+        zoom_level=args.zoom_level,
     )
