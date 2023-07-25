@@ -225,6 +225,8 @@ def run(
         'provider': provider_name,
         'browser_name': playwright.chromium.name,
         'browser_version': browser.version,
+        'operation': operation,
+        'zoom_level': zoom_level,
     }
 
     all_data.append(data)
