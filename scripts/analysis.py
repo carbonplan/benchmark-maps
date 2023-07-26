@@ -115,6 +115,7 @@ def extract_request_data(*, trace_events, url_filter: str = None):
     data['total_response_time_ms'] = data['response_end'] - data['request_start']
     if url_filter:
         data = data[data['url'].str.contains(url_filter)]
+    data = data.reset_index(drop=True)
     return data
 
 
@@ -178,6 +179,10 @@ def extract_frame_data(*, trace_events):
     frame_events['endTime'] = frame_events['startTime_Begin'].shift(periods=-1)
     frame_events = frame_events.drop(frame_events.tail(1).index)
     frame_events = frame_events.rename({'startTime_Begin': 'startTime'}, axis=1)
+    frame_events['dropped'] = frame_events['name_Draw'] == 'DroppedFrame'
+    frame_events['isPartial'] = False
+    frame_events['drawn'] = ~frame_events['dropped']
+    frame_events['idle'] = False
     return frame_events
 
 
@@ -199,8 +204,10 @@ def load_frame_data(*, frame_data_path: str):
     with open(frame_data_path) as f:
         frames = json.load(f)
     frames = pd.json_normalize(frames).sort_values(by='startTime')[
-        ['startTime', 'endTime', 'duration']
+        ['startTime', 'endTime', 'duration', 'idle', 'dropped', 'isPartial']
     ]
+    frames['dropped'] = frames['dropped'] & ~frames['isPartial']
+    frames['drawn'] = ~frames[['idle', 'dropped', 'isPartial']].any(axis=1)
     return frames
 
 
@@ -218,7 +225,7 @@ def plot_requests(df: pd.DataFrame, start_time: float):
         axis=1,
     )
     boxes = hv.Rectangles(df['rectangle'].to_list())
-    boxes.opts(width=1000, color='lightgrey', xlabel='Timestamp', yaxis=None, title='Network')
+    boxes.opts(width=1000, color='lightgrey', xlabel='Time (ms)', yaxis=None, title='Network')
     return boxes
 
 
@@ -229,9 +236,14 @@ def plot_frames(df: pd.DataFrame, start_time: float, *, yl: int = 1):
     df['rectangle'] = df.apply(
         lambda x: (x['startTime'] - start_time, yl, x['endTime'] - start_time, yl + 1), axis=1
     )
-    boxes = hv.Rectangles(df['rectangle'].to_list())
-    boxes.opts(width=1000, color='lightgreen', xlabel='Timestamp', yaxis=None, title='Frames')
-    return boxes
+    opts = {'width': 1000, 'xlabel': 'Time (ms)', 'yaxis': None, 'title': 'Frames'}
+    subsets = {'idle': 'lightgrey', 'isPartial': 'yellow', 'dropped': 'red', 'drawn': 'lightgreen'}
+    plots = {}
+    for key, value in subsets.items():
+        subset = df[df[key]]
+        plots[key] = hv.Rectangles(subset['rectangle'].to_list())
+        plots[key].opts(**opts, color=value)
+    return plots['idle'] * plots['isPartial'] * plots['dropped'] * plots['drawn']
 
 
 # Parse command line arguments and run main function
