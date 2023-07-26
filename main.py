@@ -59,6 +59,13 @@ def run(
     # click the button that is a sibling of the div with the text "Display".
     page.click('//div[text()="Display"]/following-sibling::button')
 
+    # use performance.mark API to mark the start of the benchmarks.
+    page.evaluate(
+        """
+        () => (window.performance.mark("benchmark:start"))
+                  """
+    )
+
     # Start timer
     page.evaluate(
         """
@@ -74,6 +81,8 @@ def run(
         if (!window._map) {
             window._error = 'window._map does not exist'
             console.error(window._error)
+            window.performance.mark('benchmark:end')
+            window.performance.measure('benchmark', 'benchmark:start', 'benchmark:end')
             window._timerEnd = performance.now()
         }
 
@@ -86,12 +95,16 @@ def run(
             }, THRESHOLD)
             window._map.onIdle(() => {
                 console.log('window._map.onIdle callback called')
+                window.performance.mark('benchmark:end')
+                window.performance.measure('benchmark', 'benchmark:start', 'benchmark:end')
                 window._timerEnd = performance.now()
                 resolve()
             })
         }).catch((error) => {
             window._error = 'Error in page.evaluate: ' + error;
             console.error(window._error);
+            window.performance.mark('benchmark:end')
+            window.performance.measure('benchmark', 'benchmark:start', 'benchmark:end')
             window._timerEnd = performance.now()
         })
         }
