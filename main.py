@@ -55,16 +55,15 @@ def run(
     # Focus on and click the map element
     page.focus('.mapboxgl-canvas')
     page.click('.mapboxgl-canvas')
-
-    # click the button that is a sibling of the div with the text "Display".
-    page.click('//div[text()="Display"]/following-sibling::button')
-
     # use performance.mark API to mark the start of the benchmarks.
     page.evaluate(
         """
         () => (window.performance.mark("benchmark:start"))
                   """
     )
+
+    # click the button that is a sibling of the div with the text "Display".
+    page.click('//div[text()="Display"]/following-sibling::button')
 
     # Start timer
     page.evaluate(
