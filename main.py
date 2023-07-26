@@ -4,12 +4,9 @@ import json
 import pathlib
 import subprocess
 
-import numpy as np
 from cloud_detect import provider
 from playwright.sync_api import sync_playwright
-from rich import box, print
-from rich.columns import Columns
-from rich.panel import Panel
+from rich import print
 
 # Get current timestamp
 now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
@@ -21,66 +18,6 @@ all_data = []
 # Define console logging function
 def log_console_message(msg):
     print(f'Browser console: {msg}')
-
-
-def extract_request_data(*, trace_events, url_filter: str = None):
-    """
-    Extract request data from a list of Chromium trace events, optionally filtering by URL.
-
-    Parameters
-    ----------
-
-    trace_events: list
-         The list of trace events.
-    url_filter : str, optional
-        If specified, only include requests where the URL contains this string.
-
-    Returns
-    -------
-    request_data : list of dictionaries, each containing information about a request.
-        A list of dictionaries, each containing information about a request.
-    """
-    send_request_events = {}
-    finish_request_events = {}
-
-    # Collect 'ResourceSendRequest' and 'ResourceFinish' events, indexed by request ID
-    for event in trace_events:
-        if event['name'] == 'ResourceSendRequest':
-            request_id = event['args']['data']['requestId']
-            send_request_events[request_id] = event
-        elif event['name'] == 'ResourceFinish':
-            request_id = event['args']['data']['requestId']
-            finish_request_events[request_id] = event
-
-    request_data = []
-
-    # Combine the send and finish events for each request
-    for request_id, send_event in send_request_events.items():
-        finish_event = finish_request_events.get(request_id)
-        if finish_event is not None:
-            url = send_event['args']['data']['url']
-            # If a URL filter is specified, skip URLs that don't contain the filter string
-            if url_filter is not None and url_filter not in url:
-                continue
-
-            method = send_event['args']['data']['requestMethod']
-            total_response_time_ms = (
-                finish_event['ts'] - send_event['ts']
-            ) / 1e3  # Convert to milliseconds
-            response_end = finish_event['ts'] / 1e3  # Convert to milliseconds
-            request_start = send_event['ts'] / 1e3  # Convert to milliseconds
-
-            request_data.append(
-                {
-                    'method': method,
-                    'url': url,
-                    'total_response_time_ms': total_response_time_ms,
-                    'response_end': response_end,
-                    'request_start': request_start,
-                }
-            )
-
-    return request_data
 
 
 # Define main benchmarking function
@@ -210,14 +147,9 @@ def run(
         print(f"[bold cyan]📊 Trace data saved as '{json_path}'[/bold cyan]")
 
     browser.close()
-    url_filter = 'carbonplan-maps.s3.us-west-2.amazonaws.com/v2/demo'
-    filtered_request_data = extract_request_data(
-        trace_events=trace_data['traceEvents'], url_filter=url_filter
-    )
 
     # Record system metrics
     data = {
-        'request_data': filtered_request_data,
         'timer_start': timer_start,
         'timer_end': timer_end,
         'total_duration_in_ms': timer_end - timer_start,
@@ -272,56 +204,6 @@ def main(
             except Exception as exc:
                 print(f'{run_number + 1} timed out : {exc}')
                 continue
-
-    # Compute an aggregate of the data
-
-    average_total_duration = np.mean([x['total_duration_in_ms'] for x in all_data])
-
-    total_response_times = []
-
-    for data in all_data:
-        total_response_times.extend(
-            request_data['total_response_time_ms'] for request_data in data['request_data']
-        )
-    average_request_duration = np.mean(total_response_times)
-    median_request_duration = np.median(total_response_times)
-
-    # Display results
-    configs = [
-        Panel(f'[bold green]🔄 Number of runs: {runs}[/bold green]', box=box.DOUBLE, expand=False)
-    ]
-
-    duration_results = [
-        Panel(
-            f'[bold green]⏱️ Average total duration: {average_total_duration:.2f} ms[/bold green]',
-            box=box.DOUBLE,
-            expand=False,
-        )
-    ]
-
-    request_results = [
-        Panel(
-            f'[bold green]⏱️ Average request duration: {average_request_duration:.2f} ms[/bold green]',
-            box=box.DOUBLE,
-            expand=False,
-        ),
-        Panel(
-            f'[bold green]⏱️ Median request duration: {median_request_duration:.2f} ms[/bold green]',
-            box=box.DOUBLE,
-            expand=False,
-        ),
-    ]
-
-    # Print results
-
-    print(Panel('[bold blue]Request Results[/bold blue]', box=box.DOUBLE, expand=False))
-    print(Columns(request_results, equal=True, expand=False))
-
-    print(Panel('[bold blue]Duration Results[/bold blue]', box=box.DOUBLE, expand=False))
-    print(Columns(duration_results, equal=True, expand=False))
-
-    print(Panel('[bold blue]Config[/bold blue]', box=box.DOUBLE, expand=False))
-    print(Columns(configs, equal=True, expand=False))
 
     # Write the data to a json file
     data_path = (
