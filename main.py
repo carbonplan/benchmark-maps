@@ -63,13 +63,11 @@ async def run(
                       """
         ),
         page.click('//div[text()="Display"]/following-sibling::button'),
-    )
-
-    # Start timer
-    await page.evaluate(
+        page.evaluate(
+            """
+        window._timerStart = performance.now();
         """
-    window._timerStart = performance.now();
-    """
+        ),
     )
 
     # Wait for the map to be idle and then stop timer
