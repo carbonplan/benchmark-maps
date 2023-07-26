@@ -1,0 +1,11 @@
+[
+    {
+        "browser_name": "chromium",
+        "browser_version": "115.0.5790.75",
+        "playwright_python_version": "1.36.0",
+        "provider": "unknown",
+        "timer_end": 1674.8999999985099,
+        "timer_start": 1033.0999999996275,
+        "total_duration_in_ms": 641.7999999988824
+    }
+]
