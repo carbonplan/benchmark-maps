@@ -56,15 +56,14 @@ async def run(
     # Focus on and click the map element
     await page.focus('.mapboxgl-canvas')
     await page.click('.mapboxgl-canvas')
-    # use performance.mark API to mark the start of the benchmarks.
-    await page.evaluate(
-        """
-        () => (window.performance.mark("benchmark:start"))
-                  """
+    await asyncio.gather(
+        page.evaluate(
+            """
+            () => (window.performance.mark("benchmark:start"))
+                      """
+        ),
+        page.click('//div[text()="Display"]/following-sibling::button'),
     )
-
-    # click the button that is a sibling of the div with the text "Display".
-    await page.click('//div[text()="Display"]/following-sibling::button')
 
     # Start timer
     await page.evaluate(
