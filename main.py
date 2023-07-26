@@ -1,11 +1,12 @@
 import argparse
+import asyncio
 import datetime
 import json
 import pathlib
 import subprocess
 
 from cloud_detect import provider
-from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
 from rich import print
 
 # Get current timestamp
@@ -21,7 +22,7 @@ def log_console_message(msg):
 
 
 # Define main benchmarking function
-def run(
+async def run(
     *,
     playwright,
     runs: int,
@@ -33,15 +34,15 @@ def run(
     trace_dir: pathlib.Path,
 ):
     # Launch browser and create new page
-    browser = playwright.chromium.launch()
-    context = browser.new_context()
-    page = context.new_page()
-    browser.start_tracing(page=page, screenshots=True)
+    browser = await playwright.chromium.launch()
+    context = await browser.new_context()
+    page = await context.new_page()
+    await browser.start_tracing(page=page, screenshots=True)
     # set new CDPSession to get performance metrics
-    client = page.context.new_cdp_session(page)
-    client.send('Performance.enable')
+    client = await page.context.new_cdp_session(page)
+    await client.send('Performance.enable')
     # enable FPS counter and GPU metrics overlay
-    client.send('Overlay.setShowFPSCounter', {'show': True})
+    await client.send('Overlay.setShowFPSCounter', {'show': True})
 
     # Log console messages
     page.on('console', log_console_message)
@@ -50,30 +51,30 @@ def run(
     print(f'[bold cyan]🚀 Starting benchmark run: {run_number}/{runs}...[/bold cyan]')
 
     # Go to URL
-    page.goto(url)
+    await page.goto(url)
 
     # Focus on and click the map element
-    page.focus('.mapboxgl-canvas')
-    page.click('.mapboxgl-canvas')
+    await page.focus('.mapboxgl-canvas')
+    await page.click('.mapboxgl-canvas')
     # use performance.mark API to mark the start of the benchmarks.
-    page.evaluate(
+    await page.evaluate(
         """
         () => (window.performance.mark("benchmark:start"))
                   """
     )
 
     # click the button that is a sibling of the div with the text "Display".
-    page.click('//div[text()="Display"]/following-sibling::button')
+    await page.click('//div[text()="Display"]/following-sibling::button')
 
     # Start timer
-    page.evaluate(
+    await page.evaluate(
         """
     window._timerStart = performance.now();
     """
     )
 
     # Wait for the map to be idle and then stop timer
-    page.evaluate(
+    await page.evaluate(
         """
         () => {
         window._error = null;
@@ -111,25 +112,25 @@ def run(
     """
     )
 
-    if error := page.evaluate('window._error'):
+    if error := await page.evaluate('window._error'):
         raise Exception(error)
 
     # Save screenshot to temporary file
     path = screenshot_dir / f'{now}-{run_number}.png'
-    page.screenshot(path=path)
+    await page.screenshot(path=path)
     print(f"[bold cyan]📸 Screenshot saved as '{path}'[/bold cyan]")
 
-    timer_end = page.evaluate('window._timerEnd')
-    timer_start = page.evaluate('window._timerStart')
+    timer_end = await page.evaluate('window._timerEnd')
+    timer_start = await page.evaluate('window._timerStart')
 
-    trace_json = browser.stop_tracing()
+    trace_json = await browser.stop_tracing()
     trace_data = json.loads(trace_json)
     json_path = trace_dir / f'{now}-{run_number}.json'
     with open(json_path, 'w') as f:
         json.dump(trace_data, f, indent=2)
         print(f"[bold cyan]📊 Trace data saved as '{json_path}'[/bold cyan]")
 
-    browser.close()
+    await browser.close()
 
     # Record system metrics
     data = {
@@ -146,7 +147,7 @@ def run(
 
 
 # Define main function
-def main(
+async def main(
     *,
     runs: int,
     detect_provider: bool = False,
@@ -166,10 +167,10 @@ def main(
     provider_name = provider() if detect_provider else 'unknown'
 
     # Run benchmark
-    with sync_playwright() as playwright:
+    async with async_playwright() as playwright:
         for run_number in range(runs):
             try:
-                run(
+                await run(
                     playwright=playwright,
                     runs=runs,
                     run_number=run_number + 1,
@@ -204,10 +205,12 @@ if __name__ == '__main__':
     trace_dir = root_dir / 'chrome-devtools-traces'
     trace_dir.mkdir(exist_ok=True, parents=True)
 
-    main(
-        runs=args.runs,
-        detect_provider=args.detect_provider,
-        data_dir=data_dir,
-        screenshot_dir=screenshot_dir,
-        trace_dir=trace_dir,
+    asyncio.run(
+        main(
+            runs=args.runs,
+            detect_provider=args.detect_provider,
+            data_dir=data_dir,
+            screenshot_dir=screenshot_dir,
+            trace_dir=trace_dir,
+        )
     )
