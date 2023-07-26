@@ -4,7 +4,7 @@ channels:
   - nodefaults
 dependencies:
   - python=3.10
-  - pandas
+  - pandas=1.5.3
   - pip
   - pytest
   - dask
@@ -13,14 +13,14 @@ dependencies:
   - h5pyd
   - jupyter
   - matplotlib
+  - pangeo-forge-recipes=0.10.0
   - pre-commit
   - s3fs>=2023.4.0
   - xarray
   - rasterio
   - rioxarray>=0.13.1
   - numpy
-  - xesmf
+  - xesmf=0.7.1
   - pip:
-      - git+https://github.com/pangeo-forge/pangeo-forge-recipes.git@beam-refactor
-      - git+https://github.com/carbonplan/cmip6-downscaling.git
-      - 'apache-beam[interactive, dataframe]'
+      - git+https://github.com/carbonplan/ndpyramid.git
+      - 'apache-beam[aws,interactive,dataframe]'
