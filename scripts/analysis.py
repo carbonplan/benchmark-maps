@@ -74,11 +74,12 @@ def plot_requests(df: pd.DataFrame):
 if __name__ == '__main__':
     # Parse input args
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data', type=str)
-    parser.add_argument('--run', type=int, default=0)
+    parser.add_argument('--timestamp', type=str)
+    parser.add_argument('--run', type=int, default=1)
     args = parser.parse_args()
+    trace_data_fp = f'chrome-devtools-traces/{args.timestamp}-{args.run}.json'
     # Extract request data
-    with open(args.data) as f:
+    with open(trace_data_fp) as f:
         trace_data = json.load(f)
     url_filter = 'carbonplan-maps.s3.us-west-2.amazonaws.com/v2/demo'
     filtered_request_data = extract_request_data(
