@@ -11,8 +11,8 @@ dependencies:
   - typing-extensions
   - rich
   - hvplot
-  - pre-commit
-  - jupyterlab
+  - distributed
+  - coiled
   - pip:
       - pytest-playwright
       - cloud-detect
