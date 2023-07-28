@@ -77,7 +77,7 @@ async def run(
     provider_name: str | None = None,
     screenshot_dir: pathlib.Path,
     trace_dir: pathlib.Path,
-    operation: str | None = None,
+    action: str | None = None,
     zoom_level: int | None = None,
 ):
     # Launch browser and create new page
@@ -112,28 +112,41 @@ async def run(
         page.click('//div[text()="Display"]/following-sibling::button'),
     )
 
-    # Perform operation
-    supported_operations = ['zoom_in', 'zoom_out']
-    if operation and operation not in supported_operations:
-        raise ValueError(
-            f'Invalid operation: {operation}. Supported operations are: {supported_operations}'
-        )
+    await asyncio.gather(page.focus('.mapboxgl-canvas'), page.click('.mapboxgl-canvas'))
 
-    if operation and operation.startswith('zoom') and zoom_level is None:
-        raise ValueError(f'Invalid zoom level: {zoom_level}. Must be an integer greater than 0.')
-
-    page.focus('.mapboxgl-canvas')
-    page.click('.mapboxgl-canvas')
     if zoom_level:
-        for _ in range(zoom_level):
-            if operation == 'zoom_in':
-                page.keyboard.press('=')
-            elif operation == 'zoom_out':
-                page.keyboard.press('-')
+        for level in range(zoom_level):
+            start_mark = f'benchmark-{action}-level-{level}:start'
+            end_mark = f'benchmark-{action}-level-{level}:end'
+            label = f'benchmark-{action}-level-{level}'
+            if action == 'zoom_in':
+                await asyncio.gather(
+                    page.evaluate(
+                        f"""
+                        () => (window.performance.mark("{start_mark}"))
+                        """
+                    ),
+                    page.keyboard.press('='),
+                )
+                await mark_and_measure(
+                    page=page, start_mark=start_mark, end_mark=end_mark, label=label
+                )
+            elif action == 'zoom_out':
+                await asyncio.gather(
+                    page.evaluate(
+                        f"""
+                        () => (window.performance.mark("{start_mark}"))
+                        """
+                    ),
+                    page.keyboard.press('-'),
+                )
+                await mark_and_measure(
+                    page=page, start_mark=start_mark, end_mark=end_mark, label=label
+                )
 
     # Wait for the map to be idle and then stop timer
     await mark_and_measure(
-        page=page, start_mark='benchmark:start', end_mark='benchmark:end', label='bench'
+        page=page, start_mark='benchmark:start', end_mark='benchmark:end', label='benchmark'
     )
     # Save screenshot to temporary file
     path = screenshot_dir / f'{now}-{run_number}.png'
@@ -146,8 +159,8 @@ async def run(
     trace_data = json.loads(trace_json)
     json_path = (
         trace_dir / f'{now}-{run_number}.json'
-        if operation is None
-        else trace_dir / f'{now}-{run_number}-{operation}.json'
+        if action is None
+        else trace_dir / f'{now}-{run_number}-{action}.json'
     )
     with open(json_path, 'w') as f:
         json.dump(trace_data, f, indent=2)
@@ -159,7 +172,7 @@ async def run(
         'provider': provider_name,
         'browser_name': playwright.chromium.name,
         'browser_version': browser.version,
-        'operation': operation,
+        'action': action,
         'zoom_level': zoom_level,
     }
 
@@ -174,7 +187,7 @@ async def main(
     data_dir: pathlib.Path,
     screenshot_dir: pathlib.Path,
     trace_dir: pathlib.Path,
-    operation: str | None = None,
+    action: str | None = None,
     zoom_level: int | None = None,
 ):
     # Get Playwright versions
@@ -200,7 +213,7 @@ async def main(
                     provider_name=provider_name,
                     screenshot_dir=screenshot_dir,
                     trace_dir=trace_dir,
-                    operation=operation,
+                    action=action,
                     zoom_level=zoom_level,
                 )
             except Exception as exc:
@@ -209,9 +222,7 @@ async def main(
 
     # Write the data to a json file
     data_path = (
-        data_dir / f'data-{now}.json'
-        if operation is None
-        else data_dir / f'data-{now}-{operation}.json'
+        data_dir / f'data-{now}.json' if action is None else data_dir / f'data-{now}-{action}.json'
     )
     with open(data_path, 'w') as outfile:
         json.dump(all_data, outfile, indent=4, sort_keys=True)
@@ -224,10 +235,23 @@ if __name__ == '__main__':
     parser.add_argument(
         '--detect-provider', action='store_true', help='Detect provider', default=False
     )
-    parser.add_argument('--operation', type=str, default=None, help='Operation to perform')
-    parser.add_argument('--zoom-level', type=int, default=None, help='Zoom level to perform')
+    parser.add_argument('--action', type=str, default=None, help='Action to perform')
+    parser.add_argument('--zoom-level', type=int, default=None, help='Zoom level')
 
     args = parser.parse_args()
+
+    # Perform operation
+    supported_actions = ['zoom_in', 'zoom_out']
+    if args.action and args.action not in supported_actions:
+        raise ValueError(
+            f'Invalid action: {args.action}. Supported operations are: {supported_actions}'
+        )
+
+    if args.action and args.action.startswith('zoom') and args.zoom_level is None:
+        raise ValueError(
+            f'Invalid zoom level: {args.zoom_level}. Must be an integer greater than 0.'
+        )
+
     # Define directories for data and screenshots
     root_dir = pathlib.Path(__file__).parent
     data_dir = root_dir / 'data'
@@ -244,5 +268,7 @@ if __name__ == '__main__':
             data_dir=data_dir,
             screenshot_dir=screenshot_dir,
             trace_dir=trace_dir,
+            action=args.action,
+            zoom_level=args.zoom_level,
         )
     )
