@@ -35,7 +35,13 @@ def calc_chunk_dict(ds: xr.Dataset, target_mb: int, pixels_per_tile: int) -> dic
 
 
 def pyramid(
-    ds_path: str, *, target: str, levels: int = 2, pixels_per_tile: int = 128, target_mb: int = 5
+    ds_path: str,
+    *,
+    target: str,
+    levels: int = 2,
+    pixels_per_tile: int = 128,
+    target_mb: int = 5,
+    projection: str = 'web-mercator',
 ) -> str:
     '''Create a data pyramid from an xarray Dataset
 
@@ -61,9 +67,10 @@ def pyramid(
 
     ds = xr.open_zarr(ds_path, chunks={}).rio.write_crs('EPSG:4326')
 
-    chunks = calc_chunk_dict(ds, target_mb=target_mb, pixels_per_tile=pixels_per_tile)
+    calc_chunk_dict(ds, target_mb=target_mb, pixels_per_tile=pixels_per_tile)
 
-    other_chunks = {'time': chunks['time']}
+    # other_chunks = {'time': chunks['time']}
+    other_chunks = {'time': 10}
     print(f'creating pyramids from {ds_path}...')
 
     # create pyramid
@@ -72,6 +79,7 @@ def pyramid(
         levels=levels,
         pixels_per_tile=pixels_per_tile,
         other_chunks=other_chunks,
+        projection=projection,
     )
 
     print('setting metadata...')
