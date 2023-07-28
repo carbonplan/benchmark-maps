@@ -24,6 +24,6 @@ dependencies:
   - xesmf=0.7.1
   - pip:
       - git+https://github.com/carbonplan/ndpyramid.git
-      - git+https://github.com/scalableminds/zarrita.git
+      - git+https://github.com/scalableminds/zarrita.git@b88ae5ca02917e24e716855f15ffaf020b95bb1a
       - git+https://github.com/carbonplan/data.git
       - 'apache-beam[aws,interactive,dataframe]'

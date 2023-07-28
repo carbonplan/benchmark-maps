@@ -78,8 +78,14 @@ def pyramid(
     # set encoding
     for child in dta.children:
         dta[child].ds = set_web_zarr_encoding(
-            dta[child].ds, codec_config={'id': 'gzip', 'level': 1}, float_dtype='float32'
+            dta[child].ds,
+            codec_config={'id': 'gzip', 'level': 1},
+            float_dtype='float32',
+            int_dtype='int32',
         )
+        for var in ['time', 'time_bnds']:
+            if var in dta[child].ds:
+                dta[child].ds[var].encoding['dtype'] = 'int32'
 
     # write to zarr
     print(f'writing to {target}...')
