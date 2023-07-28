@@ -21,6 +21,51 @@ def log_console_message(msg):
     print(f'Browser console: {msg}')
 
 
+async def mark_and_measure(*, page, start_mark: str, end_mark: str, label: str):
+    # Define the JavaScript code to be executed
+    javascript_code = f"""
+    () => {{
+    window._error = null;
+    if (!window._map) {{
+        window._error = 'window._map does not exist'
+        console.error(window._error)
+        window.performance.mark('{end_mark}')
+        window.performance.measure('{label}', '{start_mark}', '{end_mark}')
+
+    }}
+
+    return new Promise((resolve, reject) => {{
+        const THRESHOLD = 5000
+        // timeout after THRESHOLD ms if idle event is not seen
+        setTimeout(() => {{
+            window._error = `No idle events seen after ${{THRESHOLD}}ms`;
+            reject(window._error)
+        }}, THRESHOLD)
+        window._map.onIdle(() => {{
+            console.log('window._map.onIdle callback called')
+            window.performance.mark('{end_mark}')
+            window.performance.measure('{label}', '{start_mark}', '{end_mark}')
+
+            resolve()
+        }})
+    }}).catch((error) => {{
+        window._error = 'Error in page.evaluate: ' + error;
+        console.error(window._error);
+        window.performance.mark('{end_mark}')
+        window.performance.measure('{label}', '{start_mark}', '{end_mark}')
+
+    }})
+    }}
+    """
+
+    # Use the JavaScript code in the page.evaluate() call
+    await page.evaluate(javascript_code)
+
+    # If there was an error, raise an exception
+    if error := await page.evaluate('window._error'):
+        raise RuntimeError(error)
+
+
 # Define main benchmarking function
 async def run(
     *,
@@ -60,80 +105,31 @@ async def run(
         page.evaluate(
             """
             () => (window.performance.mark("benchmark:start"))
-                      """
+            """
         ),
         page.click('//div[text()="Display"]/following-sibling::button'),
-        page.evaluate(
-            """
-        window._timerStart = performance.now();
-        """
-        ),
     )
 
     # Wait for the map to be idle and then stop timer
-    await page.evaluate(
-        """
-        () => {
-        window._error = null;
-        if (!window._map) {
-            window._error = 'window._map does not exist'
-            console.error(window._error)
-            window.performance.mark('benchmark:end')
-            window.performance.measure('benchmark', 'benchmark:start', 'benchmark:end')
-            window._timerEnd = performance.now()
-        }
-
-        return new Promise((resolve, reject) => {
-            const THRESHOLD = 5000
-            // timeout after THRESHOLD ms if idle event is not seen
-            setTimeout(() => {
-                window._error = `No idle events seen after ${THRESHOLD}ms`;
-                reject(window._error)
-            }, THRESHOLD)
-            window._map.onIdle(() => {
-                console.log('window._map.onIdle callback called')
-                window.performance.mark('benchmark:end')
-                window.performance.measure('benchmark', 'benchmark:start', 'benchmark:end')
-                window._timerEnd = performance.now()
-                resolve()
-            })
-        }).catch((error) => {
-            window._error = 'Error in page.evaluate: ' + error;
-            console.error(window._error);
-            window.performance.mark('benchmark:end')
-            window.performance.measure('benchmark', 'benchmark:start', 'benchmark:end')
-            window._timerEnd = performance.now()
-        })
-        }
-
-    """
+    await mark_and_measure(
+        page=page, start_mark='benchmark:start', end_mark='benchmark:end', label='bench'
     )
-
-    if error := await page.evaluate('window._error'):
-        raise Exception(error)
-
     # Save screenshot to temporary file
     path = screenshot_dir / f'{now}-{run_number}.png'
     await page.screenshot(path=path)
     print(f"[bold cyan]📸 Screenshot saved as '{path}'[/bold cyan]")
 
-    timer_end = await page.evaluate('window._timerEnd')
-    timer_start = await page.evaluate('window._timerStart')
-
     trace_json = await browser.stop_tracing()
+    await browser.close()
+
     trace_data = json.loads(trace_json)
     json_path = trace_dir / f'{now}-{run_number}.json'
     with open(json_path, 'w') as f:
         json.dump(trace_data, f, indent=2)
         print(f"[bold cyan]📊 Trace data saved as '{json_path}'[/bold cyan]")
 
-    await browser.close()
-
     # Record system metrics
     data = {
-        'timer_start': timer_start,
-        'timer_end': timer_end,
-        'total_duration_in_ms': timer_end - timer_start,
         'playwright_python_version': playwright_python_version,
         'provider': provider_name,
         'browser_name': playwright.chromium.name,
