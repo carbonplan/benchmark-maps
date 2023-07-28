@@ -42,7 +42,7 @@ async def mark_and_measure(*, page, start_mark: str, end_mark: str, label: str):
             reject(window._error)
         }}, THRESHOLD)
         window._map.onIdle(() => {{
-            console.log('window._map.onIdle callback called')
+            console.log(`window._map.onIdle callback called by event with label: {label}`)
             window.performance.mark('{end_mark}')
             window.performance.measure('{label}', '{start_mark}', '{end_mark}')
 
@@ -101,15 +101,23 @@ async def run(
     await page.goto(url)
 
     # Focus on and click the map element
-    await page.focus('.mapboxgl-canvas')
-    await page.click('.mapboxgl-canvas')
+    await asyncio.gather(page.focus('.mapboxgl-canvas'), page.click('.mapboxgl-canvas'))
+
     await asyncio.gather(
         page.evaluate(
             """
-            () => (window.performance.mark("benchmark:start"))
+            () => (window.performance.mark("benchmark-initial-load:start"))
             """
         ),
         page.click('//div[text()="Display"]/following-sibling::button'),
+    )
+
+    # Wait for the map to be idle and then stop timer
+    await mark_and_measure(
+        page=page,
+        start_mark='benchmark-initial-load:start',
+        end_mark='benchmark-initial-load:end',
+        label='benchmark-initial-load',
     )
 
     await asyncio.gather(page.focus('.mapboxgl-canvas'), page.click('.mapboxgl-canvas'))
@@ -120,34 +128,23 @@ async def run(
             end_mark = f'benchmark-{action}-level-{level}:end'
             label = f'benchmark-{action}-level-{level}'
             if action == 'zoom_in':
-                await asyncio.gather(
-                    page.evaluate(
-                        f"""
+                await page.keyboard.press('=')
+                await page.evaluate(
+                    f"""
                         () => (window.performance.mark("{start_mark}"))
                         """
-                    ),
-                    page.keyboard.press('='),
-                )
-                await mark_and_measure(
-                    page=page, start_mark=start_mark, end_mark=end_mark, label=label
-                )
+                ),
+
             elif action == 'zoom_out':
-                await asyncio.gather(
-                    page.evaluate(
-                        f"""
+                await page.keyboard.press('-'),
+                await page.evaluate(
+                    f"""
                         () => (window.performance.mark("{start_mark}"))
                         """
-                    ),
-                    page.keyboard.press('-'),
-                )
-                await mark_and_measure(
-                    page=page, start_mark=start_mark, end_mark=end_mark, label=label
                 )
 
-    # Wait for the map to be idle and then stop timer
-    await mark_and_measure(
-        page=page, start_mark='benchmark:start', end_mark='benchmark:end', label='benchmark'
-    )
+            await mark_and_measure(page=page, start_mark=start_mark, end_mark=end_mark, label=label)
+
     # Save screenshot to temporary file
     path = screenshot_dir / f'{now}-{run_number}.png'
     await page.screenshot(path=path)
