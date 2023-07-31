@@ -27,10 +27,10 @@ async def mark_and_measure(*, page, start_mark: str, end_mark: str, label: str):
         () => {{
             window._error = null;
             return new Promise((resolve, reject) => {{
-                const THRESHOLD = 4000;
+                const THRESHOLD = 5000;
                 // timeout after THRESHOLD ms
                 setTimeout(() => {{
-                    console.log(`${{THRESHOLD}} ms threshold timeout reached`);
+                    console.log(`label: ${{label}}: ${{THRESHOLD}} ms threshold timeout reached.`);
                     if(window._error){{
                         reject(window._error);
                     }} else {{

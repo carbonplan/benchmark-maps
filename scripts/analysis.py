@@ -7,6 +7,7 @@ import holoviews as hv
 import hvplot.pandas
 import numpy as np
 import pandas as pd
+import upath
 
 pd.options.plotting.backend = 'holoviews'
 
@@ -298,12 +299,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--timestamp', type=str)
     parser.add_argument('--run', type=int, default=1)
+    parser.add_argument('--s3-bucket', type=str, default=None)
     args = parser.parse_args()
-    trace_data_fp = f'chrome-devtools-traces/{args.timestamp}-{args.run}.json'
-    frame_data_fp = f'chrome-devtools-traces/frames/{args.timestamp}-{args.run}.json'
+    if args.s3_bucket is not None:
+        root_dir = upath.UPath(args.s3_bucket)
+    else:
+        root_dir = upath.UPath('.')
+    trace_data_fp = root_dir / f'chrome-devtools-traces/{args.timestamp}-{args.run}.json'
     # Load trace events
-    with open(trace_data_fp) as f:
-        trace_events = json.load(f)['traceEvents']
+    trace_events = json.loads(trace_data_fp.read_text())['traceEvents']
     # Get start time
     start_time = get_start_time(trace_events=trace_events)
     # Extract request data
