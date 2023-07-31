@@ -286,9 +286,9 @@ def plot_screenshot_rmse(
     """
     opts = {'width': 1000, 'xlabel': 'Time (ms)', 'ylabel': 'RMSE', 'title': 'Sceenshots'}
     df['startTime_relative'] = df['startTime'] - start_time
-    z0 = df.plot.line(x='startTime_relative', y='rmse_zoom0')
-    z1 = df.plot.line(x='startTime_relative', y='rmse_zoom1')
-    z2 = df.plot.line(x='startTime_relative', y='rmse_zoom2')
+    z0 = df.plot.line(x='startTime_relative', y='rmse_zoom0', label='Zoom 0 baseline')
+    z1 = df.plot.line(x='startTime_relative', y='rmse_zoom1', label='Zoom 1 baseline')
+    z2 = df.plot.line(x='startTime_relative', y='rmse_zoom2', label='Zoom 2 baseline')
     return (z0 * z1 * z2).opts(**opts)
 
 
