@@ -186,31 +186,6 @@ def extract_frame_data(*, trace_events):
     return frame_events
 
 
-def load_frame_data(*, frame_data_path: str):
-    """
-    Load frame data from the output of Chrome dev tools.
-
-    Parameters
-    ----------
-
-    frame_data_path: str
-        Path to the json containing frame data
-
-    Returns
-    -------
-    frame_data : pd:DataFrame
-        DataFrame containing frame timing and durations
-    """
-    with open(frame_data_path) as f:
-        frames = json.load(f)
-    frames = pd.json_normalize(frames).sort_values(by='startTime')[
-        ['startTime', 'endTime', 'duration', 'idle', 'dropped', 'isPartial']
-    ]
-    frames['dropped'] = frames['dropped'] & ~frames['isPartial']
-    frames['drawn'] = ~frames[['idle', 'dropped', 'isPartial']].any(axis=1)
-    return frames
-
-
 def plot_requests(df: pd.DataFrame, start_time: float):
     """
     Plot rectangles showing each request duration
@@ -263,13 +238,10 @@ if __name__ == '__main__':
     # Extract request data
     url_filter = 'carbonplan-maps.s3.us-west-2.amazonaws.com/v2/demo'
     filtered_request_data = extract_request_data(trace_events=trace_events, url_filter=url_filter)
-    # Load frame data
-    frame_data = load_frame_data(frame_data_path=frame_data_fp)
     # Extract frame data
     filtered_frames_data = extract_frame_data(trace_events=trace_events)
     # # Create plots
     requests_plt = plot_requests(filtered_request_data, start_time)
-    frames_plt = plot_frames(frame_data, start_time)
-    extracted_frames_plt = plot_frames(filtered_frames_data, start_time, yl=2.5)
+    frames_plt = plot_frames(filtered_frames_data, start_time, yl=2.5)
     # # Show plot using bokeh server
-    hvplot.show((requests_plt + (frames_plt * extracted_frames_plt)).cols(1))
+    hvplot.show((requests_plt + frames_plt).cols(1))
