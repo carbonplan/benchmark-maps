@@ -1,11 +1,33 @@
 import argparse
+import base64
 import json
 
+import cv2 as cv
 import holoviews as hv
 import hvplot.pandas
+import numpy as np
 import pandas as pd
 
 pd.options.plotting.backend = 'holoviews'
+
+
+def base64_to_img(base64jpeg):
+    """
+    Load jpeg image encoded as base64
+
+    Parameters
+    ----------
+
+    df: pd.DataFrame
+        DataFrame containing event information
+
+    Returns
+    -------
+    image : np.ndarray
+        Numpy array containing image
+    """
+    arr = np.frombuffer(base64.b64decode(base64jpeg), np.uint8)
+    return cv.imdecode(arr, cv.IMREAD_COLOR)
 
 
 def process_rendering_events(df):
@@ -65,6 +87,40 @@ def get_start_time(*, trace_events):
         First non-zero start time from events
     """
     return next((x['ts'] for x in trace_events if x['ts']), None) * 1e-3
+
+
+def extract_screenshots(*, trace_events):
+    """
+    Extract screenshots from a list of Chromium trace events.
+
+    Parameters
+    ----------
+
+    trace_events: list
+         The list of trace events.
+
+    Returns
+    -------
+    screenshots : DataFrame containing screenshots
+    """
+
+    def calculate_rmse(predictions, targets):
+        return np.sqrt(np.mean((predictions - targets) ** 2))
+
+    screenshots = pd.json_normalize(
+        [event for event in trace_events if event['name'] == 'Screenshot']
+    )
+    screenshots = process_rendering_events(screenshots)
+    baseline = pd.read_json('data/baselines.json', orient='index')
+    zoom0_baseline = base64_to_img(baseline.loc[0, 'baseline'])
+    zoom1_baseline = base64_to_img(baseline.loc[1, 'baseline'])
+    zoom2_baseline = base64_to_img(baseline.loc[2, 'baseline'])
+    for ind, row in screenshots.iterrows():
+        frame = base64_to_img(row['args.snapshot'])
+        screenshots.loc[ind, 'rmse_zoom0'] = calculate_rmse(frame, zoom0_baseline)
+        screenshots.loc[ind, 'rmse_zoom1'] = calculate_rmse(frame, zoom1_baseline)
+        screenshots.loc[ind, 'rmse_zoom2'] = calculate_rmse(frame, zoom2_baseline)
+    return screenshots
 
 
 def extract_request_data(*, trace_events, url_filter: str = None):
@@ -221,6 +277,21 @@ def plot_frames(df: pd.DataFrame, start_time: float, *, yl: int = 1):
     return plots['idle'] * plots['isPartial'] * plots['dropped'] * plots['drawn']
 
 
+def plot_screenshot_rmse(
+    df: pd.DataFrame,
+    start_time: float,
+):
+    """
+    Plot difference between the screenshots and baseline frames
+    """
+    opts = {'width': 1000, 'xlabel': 'Time (ms)', 'ylabel': 'RMSE', 'title': 'Sceenshots'}
+    df['startTime_relative'] = df['startTime'] - start_time
+    z0 = df.plot.line(x='startTime_relative', y='rmse_zoom0')
+    z1 = df.plot.line(x='startTime_relative', y='rmse_zoom1')
+    z2 = df.plot.line(x='startTime_relative', y='rmse_zoom2')
+    return (z0 * z1 * z2).opts(**opts)
+
+
 # Parse command line arguments and run main function
 if __name__ == '__main__':
     # Parse input args
@@ -240,8 +311,11 @@ if __name__ == '__main__':
     filtered_request_data = extract_request_data(trace_events=trace_events, url_filter=url_filter)
     # Extract frame data
     filtered_frames_data = extract_frame_data(trace_events=trace_events)
+    # Extract screenshot data
+    screenshot_data = extract_screenshots(trace_events=trace_events)
     # # Create plots
     requests_plt = plot_requests(filtered_request_data, start_time)
     frames_plt = plot_frames(filtered_frames_data, start_time, yl=2.5)
+    rmse_plt = plot_screenshot_rmse(screenshot_data, start_time)
     # # Show plot using bokeh server
-    hvplot.show((requests_plt + frames_plt).cols(1))
+    hvplot.show((requests_plt + frames_plt + rmse_plt).cols(1))
