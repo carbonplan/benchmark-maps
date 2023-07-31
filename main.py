@@ -30,7 +30,7 @@ async def mark_and_measure(*, page, start_mark: str, end_mark: str, label: str):
                 const THRESHOLD = 5000;
                 // timeout after THRESHOLD ms
                 setTimeout(() => {{
-                    console.log(`label: ${{label}}: ${{THRESHOLD}} ms threshold timeout reached.`);
+                    console.log(`'{label}': ${{THRESHOLD}} ms threshold timeout reached.`);
                     if(window._error){{
                         reject(window._error);
                     }} else {{
@@ -68,7 +68,6 @@ async def run(
     trace_dir: upath.UPath,
     action: str | None = None,
     zoom_level: int | None = None,
-    s3_bucket: str | None = None,
 ):
     # Launch browser and create new page
     browser = await playwright.chromium.launch()
@@ -191,7 +190,6 @@ async def main(
                     trace_dir=trace_dir,
                     action=action,
                     zoom_level=zoom_level,
-                    s3_bucket=s3_bucket,
                 )
             except Exception as exc:
                 print(f'{run_number + 1} timed out : {exc}')
@@ -233,9 +231,9 @@ if __name__ == '__main__':
     data_dir = root_dir / 'data'
     data_dir.mkdir(exist_ok=True, parents=True)
     trace_dir = (
-        root_dir / 'chrome-devtools-traces'
-        if not args.s3_bucket
-        else upath.UPath(args.s3_bucket) / 'chrome-devtools-traces'
+        upath.UPath(args.s3_bucket) / 'chrome-devtools-traces'
+        if args.s3_bucket
+        else root_dir / 'chrome-devtools-traces'
     )
     trace_dir.mkdir(exist_ok=True, parents=True)
 
