@@ -2,9 +2,9 @@ import argparse
 import asyncio
 import datetime
 import json
-import pathlib
 import subprocess
 
+import upath
 from cloud_detect import provider
 from playwright.async_api import async_playwright
 from rich import print
@@ -24,32 +24,29 @@ def log_console_message(msg):
 async def mark_and_measure(*, page, start_mark: str, end_mark: str, label: str):
     # Define the JavaScript code to be executed
     javascript_code = f"""
-    () => {{
-    window._error = null;
-    if (!window._map) {{
-        window._error = 'window._map does not exist'
-        console.error(window._error)
-        window.performance.mark('{end_mark}')
-        window.performance.measure('{label}', '{start_mark}', '{end_mark}')
+        () => {{
+            window._error = null;
+            return new Promise((resolve, reject) => {{
+                const THRESHOLD = 4000;
+                // timeout after THRESHOLD ms
+                setTimeout(() => {{
+                    console.log(`${{THRESHOLD}} ms threshold timeout reached`);
+                    if(window._error){{
+                        reject(window._error);
+                    }} else {{
+                        window.performance.mark('{end_mark}');
+                        window.performance.measure('{label}', '{start_mark}', '{end_mark}');
+                        resolve();
+                    }}
+                }}, THRESHOLD);
+            }})
+            .catch((error) => {{
+                window._error = `Error in page.evaluate: ${{error}}`;
+                console.error(window._error)
 
-    }}
-
-    return new Promise((resolve, reject) => {{
-        const THRESHOLD = 5000
-        // timeout after THRESHOLD ms
-        setTimeout(() => {{
-            console.log(`Timeout reached`);
-            resolve()
-        }}, THRESHOLD)
-    }}).catch((error) => {{
-        window._error = 'Error in page.evaluate: ' + error;
-        console.error(window._error);
-        window.performance.mark('{end_mark}')
-        window.performance.measure('{label}', '{start_mark}', '{end_mark}')
-
-    }})
-    }}
-    """
+            }});
+        }}
+        """
 
     # Use the JavaScript code in the page.evaluate() call
     await page.evaluate(javascript_code)
@@ -68,10 +65,10 @@ async def run(
     url: str = 'https://maps-demo-git-katamartin-benchmarking-carbonplan.vercel.app/',
     playwright_python_version: str | None = None,
     provider_name: str | None = None,
-    screenshot_dir: pathlib.Path,
-    trace_dir: pathlib.Path,
+    trace_dir: upath.UPath,
     action: str | None = None,
     zoom_level: int | None = None,
+    s3_bucket: str | None = None,
 ):
     # Launch browser and create new page
     browser = await playwright.chromium.launch()
@@ -136,23 +133,14 @@ async def run(
 
             await mark_and_measure(page=page, start_mark=start_mark, end_mark=end_mark, label=label)
 
-    # Save screenshot to temporary file
-    path = screenshot_dir / f'{now}-{run_number}.png'
-    await page.screenshot(path=path)
-    print(f"[bold cyan]📸 Screenshot saved as '{path}'[/bold cyan]")
-
+    # Stop tracing and save trace data
     trace_json = await browser.stop_tracing()
     await browser.close()
 
     trace_data = json.loads(trace_json)
-    json_path = (
-        trace_dir / f'{now}-{run_number}.json'
-        if action is None
-        else trace_dir / f'{now}-{run_number}.json'
-    )
-    with open(json_path, 'w') as f:
-        json.dump(trace_data, f, indent=2)
-        print(f"[bold cyan]📊 Trace data saved as '{json_path}'[/bold cyan]")
+    json_path = trace_dir / f'{now}-{run_number}.json'
+    json_path.write_text(json.dumps(trace_data, indent=2))
+    print(f"[bold cyan]📊 Trace data saved as '{json_path}'[/bold cyan]")
 
     # Record system metrics
     data = {
@@ -162,6 +150,7 @@ async def run(
         'browser_version': browser.version,
         'action': action,
         'zoom_level': zoom_level,
+        'trace_path': str(json_path),
     }
 
     all_data.append(data)
@@ -172,11 +161,11 @@ async def main(
     *,
     runs: int,
     detect_provider: bool = False,
-    data_dir: pathlib.Path,
-    screenshot_dir: pathlib.Path,
-    trace_dir: pathlib.Path,
+    data_dir: upath.UPath,
+    trace_dir: upath.UPath,
     action: str | None = None,
     zoom_level: int | None = None,
+    s3_bucket: str | None = None,
 ):
     # Get Playwright versions
     playwright_python_version = subprocess.run(
@@ -199,17 +188,17 @@ async def main(
                     run_number=run_number + 1,
                     playwright_python_version=playwright_python_version,
                     provider_name=provider_name,
-                    screenshot_dir=screenshot_dir,
                     trace_dir=trace_dir,
                     action=action,
                     zoom_level=zoom_level,
+                    s3_bucket=s3_bucket,
                 )
             except Exception as exc:
                 print(f'{run_number + 1} timed out : {exc}')
                 continue
 
     # Write the data to a json file
-    data_path = data_dir / f'data-{now}.json' if action is None else data_dir / f'data-{now}.json'
+    data_path = data_dir / f'data-{now}.json'
     with open(data_path, 'w') as outfile:
         json.dump(all_data, outfile, indent=4, sort_keys=True)
 
@@ -221,6 +210,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--detect-provider', action='store_true', help='Detect provider', default=False
     )
+    parser.add_argument('--s3-bucket', type=str, default=None, help='S3 bucket name')
     parser.add_argument('--action', type=str, default=None, help='Action to perform')
     parser.add_argument('--zoom-level', type=int, default=None, help='Zoom level')
 
@@ -239,12 +229,14 @@ if __name__ == '__main__':
         )
 
     # Define directories for data and screenshots
-    root_dir = pathlib.Path(__file__).parent
+    root_dir = upath.UPath(__file__).parent
     data_dir = root_dir / 'data'
     data_dir.mkdir(exist_ok=True, parents=True)
-    screenshot_dir = root_dir / 'playwright-screenshots'
-    screenshot_dir.mkdir(exist_ok=True, parents=True)
-    trace_dir = root_dir / 'chrome-devtools-traces'
+    trace_dir = (
+        root_dir / 'chrome-devtools-traces'
+        if not args.s3_bucket
+        else upath.UPath(args.s3_bucket) / 'chrome-devtools-traces'
+    )
     trace_dir.mkdir(exist_ok=True, parents=True)
 
     asyncio.run(
@@ -252,9 +244,9 @@ if __name__ == '__main__':
             runs=args.runs,
             detect_provider=args.detect_provider,
             data_dir=data_dir,
-            screenshot_dir=screenshot_dir,
             trace_dir=trace_dir,
             action=args.action,
             zoom_level=args.zoom_level,
+            s3_bucket=args.s3_bucket,
         )
     )
