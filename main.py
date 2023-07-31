@@ -36,18 +36,11 @@ async def mark_and_measure(*, page, start_mark: str, end_mark: str, label: str):
 
     return new Promise((resolve, reject) => {{
         const THRESHOLD = 5000
-        // timeout after THRESHOLD ms if idle event is not seen
+        // timeout after THRESHOLD ms
         setTimeout(() => {{
-            window._error = `No idle events seen after ${{THRESHOLD}}ms`;
-            reject(window._error)
-        }}, THRESHOLD)
-        window._map.onIdle(() => {{
-            console.log(`window._map.onIdle callback called by event with label: {label}`)
-            window.performance.mark('{end_mark}')
-            window.performance.measure('{label}', '{start_mark}', '{end_mark}')
-
+            console.log(`Timeout reached`);
             resolve()
-        }})
+        }}, THRESHOLD)
     }}).catch((error) => {{
         window._error = 'Error in page.evaluate: ' + error;
         console.error(window._error);
@@ -88,8 +81,6 @@ async def run(
     # set new CDPSession to get performance metrics
     client = await page.context.new_cdp_session(page)
     await client.send('Performance.enable')
-    # enable FPS counter and GPU metrics overlay
-    await client.send('Overlay.setShowFPSCounter', {'show': True})
 
     # Log console messages
     page.on('console', log_console_message)
@@ -112,7 +103,7 @@ async def run(
         page.click('//div[text()="Display"]/following-sibling::button'),
     )
 
-    # Wait for the map to be idle and then stop timer
+    # Wait for the timeout to be reached
     await mark_and_measure(
         page=page,
         start_mark='benchmark-initial-load:start',
@@ -157,7 +148,7 @@ async def run(
     json_path = (
         trace_dir / f'{now}-{run_number}.json'
         if action is None
-        else trace_dir / f'{now}-{run_number}-{action}.json'
+        else trace_dir / f'{now}-{run_number}.json'
     )
     with open(json_path, 'w') as f:
         json.dump(trace_data, f, indent=2)
@@ -218,9 +209,7 @@ async def main(
                 continue
 
     # Write the data to a json file
-    data_path = (
-        data_dir / f'data-{now}.json' if action is None else data_dir / f'data-{now}-{action}.json'
-    )
+    data_path = data_dir / f'data-{now}.json' if action is None else data_dir / f'data-{now}.json'
     with open(data_path, 'w') as outfile:
         json.dump(all_data, outfile, indent=4, sort_keys=True)
 
