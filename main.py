@@ -88,8 +88,6 @@ async def run(
     # set new CDPSession to get performance metrics
     client = await page.context.new_cdp_session(page)
     await client.send('Performance.enable')
-    # enable FPS counter and GPU metrics overlay
-    await client.send('Overlay.setShowFPSCounter', {'show': True})
 
     # Log console messages
     page.on('console', log_console_message)
