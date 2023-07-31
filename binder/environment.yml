@@ -16,3 +16,4 @@ dependencies:
   - pip:
       - pytest-playwright
       - cloud-detect
+      - opencv-python
