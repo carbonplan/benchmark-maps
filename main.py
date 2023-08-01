@@ -83,10 +83,10 @@ async def run(
     context = await browser.new_context()
     page = await context.new_page()
     await browser.start_tracing(page=page, screenshots=True)
-    # set new CDPSession to get performance metrics
-    client = await page.context.new_cdp_session(page)
-    await client.send('Performance.enable')
-    await client.send('Overlay.setShowFPSCounter', {'show': True})
+    # # set new CDPSession to get performance metrics
+    # client = await page.context.new_cdp_session(page)
+    # await client.send('Performance.enable')
+    # await client.send('Overlay.setShowFPSCounter', {'show': True})
 
     # Log console messages
     page.on('console', log_console_message)
