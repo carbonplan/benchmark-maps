@@ -70,13 +70,23 @@ async def run(
     zoom_level: int | None = None,
 ):
     # Launch browser and create new page
-    browser = await playwright.chromium.launch()
+    chrome_args = [
+        '--enable-features=Vulkan,UseSkiaRenderer',
+        '--use-vulkan=swiftshader',
+        '--enable-unsafe-webgpu',
+        '--disable-vulkan-fallback-to-gl-for-testing',
+        '--dignore-gpu-blocklist',
+        '--use-angle=vulkan',
+    ]
+    browser = await playwright.chromium.launch(args=chrome_args)
+
     context = await browser.new_context()
     page = await context.new_page()
     await browser.start_tracing(page=page, screenshots=True)
     # set new CDPSession to get performance metrics
     client = await page.context.new_cdp_session(page)
     await client.send('Performance.enable')
+    await client.send('Overlay.setShowFPSCounter', {'show': True})
 
     # Log console messages
     page.on('console', log_console_message)
@@ -85,6 +95,7 @@ async def run(
     print(f'[bold cyan]🚀 Starting benchmark run: {run_number}/{runs}...[/bold cyan]')
 
     # Go to URL
+    # await page.goto("chrome://gpu")
     await page.goto(url)
 
     # Focus on and click the map element
