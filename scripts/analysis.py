@@ -176,6 +176,24 @@ def extract_request_data(*, trace_events, url_filter: str = None):
     return data
 
 
+def extract_markers(*, trace_events):
+    """
+    Extract markers from a list of Chromium trace events.
+
+    Parameters
+    ----------
+
+    trace_events: list
+         The list of trace events.
+
+    Returns
+    -------
+    markers : DataFrame containing information about markers
+    """
+    markers = pd.json_normalize([event for event in trace_events if 'benchmark-' in event['name']])
+    return markers
+
+
 def extract_frame_data(*, trace_events):
     """
     Extract frame data from a list of Chromium trace events.
@@ -311,6 +329,8 @@ if __name__ == '__main__':
     trace_events = json.loads(upath.UPath(metadata['trace_path']).read_text())['traceEvents']
     # Get start time
     start_time = get_start_time(trace_events=trace_events)
+    # Get markers
+    markers = extract_markers(trace_events=trace_events)
     # Extract request data
     url_filter = 'carbonplan-benchmarks.s3.us-west-2.amazonaws.com/data/'
     filtered_request_data = extract_request_data(trace_events=trace_events, url_filter=url_filter)
