@@ -73,7 +73,6 @@ async def run(
     # Launch browser and create new page
     chrome_args = [
         '--enable-features=Vulkan,UseSkiaRenderer',
-        '--use-vulkan=swiftshader',
         '--enable-unsafe-webgpu',
         '--disable-vulkan-fallback-to-gl-for-testing',
         '--ignore-gpu-blocklist',
@@ -92,6 +91,7 @@ async def run(
     print(f'[bold cyan]🚀 Starting benchmark run: {run_number}/{runs}...[/bold cyan]')
 
     # Go to URL
+
     await page.goto(url)
 
     # Focus on and click the map element
