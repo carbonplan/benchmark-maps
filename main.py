@@ -11,10 +11,8 @@ from rich import print
 
 BASE_URL = 'https://prototype-maps.vercel.app'
 DATASETS_KEYS = ['1MB-chunks', '5MB-chunks', '10MB-chunks', '25MB-chunks']
-DATASETS = {'direct-client': {'v2': DATASETS_KEYS, 'v3': DATASETS_KEYS}}
-ZARR_VERSIONS = list(DATASETS['direct-client'].keys())
-ZARR_V2_DATASETS = DATASETS['direct-client']['v2']
-ZARR_V3_DATASETS = DATASETS['direct-client']['v3']
+ZARR_VERSIONS = ['v2', 'v3']
+APPROACHES = ['direct-client']
 SUPPORTED_ACTIONS = ['zoom_in', 'zoom_out']
 
 
@@ -85,7 +83,7 @@ async def run(
         '--enable-unsafe-webgpu',
         '--disable-vulkan-fallback-to-gl-for-testing',
         '--ignore-gpu-blocklist',
-        '--use-angle=vulkan',
+        # '--use-angle=vulkan', # this results in a Browser console: Error: Failed to initialize WebGL
     ]
     browser = await playwright.chromium.launch(headless=headless, args=chrome_args)
 
@@ -232,19 +230,19 @@ if __name__ == '__main__':
         '--approach',
         type=str,
         default='direct-client',
-        help=f'Approach to use. Must be one of: {list(DATASETS.keys())}',
+        help=f'Approach to use. Must be one of: {APPROACHES}',
     )
     parser.add_argument(
-        '--zarr-v2-dataset',
+        '--dataset',
         type=str,
         default=None,
-        help=f'Zarr v2 dataset name. Must be one of: {ZARR_V2_DATASETS}',
+        help=f'dataset name. Must be one of: {DATASETS_KEYS}',
     )
     parser.add_argument(
-        '--zarr-v3-dataset',
+        '--zarr-version',
         type=str,
         default=None,
-        help=f'Zarr v3 dataset name. Must be one of: {ZARR_V3_DATASETS}',
+        help=f'Zarr version. Must be one of: {ZARR_VERSIONS}',
     )
     parser.add_argument('--non-headless', action='store_true', help='Run in non-headless mode')
     parser.add_argument('--s3-bucket', type=str, default=None, help='S3 bucket name')
@@ -269,35 +267,14 @@ if __name__ == '__main__':
             f'Invalid zoom level: {args.zoom_level}. Must be an integer greater than 0.'
         )
     # Validate approach argument
-    if args.approach not in DATASETS.keys():
-        raise ValueError(
-            f'Invalid approach: {args.approach}. Must be one of: {list(DATASETS.keys())}'
-        )
-    # zarr-v2-dataset argument and zarr-v3-dataset argument are mutually exclusive
-    if args.zarr_v2_dataset and args.zarr_v3_dataset:
-        raise ValueError(
-            'Invalid arguments: zarr-v2-dataset and zarr-v3-dataset are mutually exclusive.'
-        )
-    # raise if neither zarr-v2-dataset nor zarr-v3-dataset is provided
-    if not args.zarr_v2_dataset and not args.zarr_v3_dataset:
-        raise ValueError(
-            'Invalid arguments: either --zarr-v2-dataset or --zarr-v3-dataset must be provided.'
-        )
-    # Validate zarr-v2-dataset argument
-    if args.zarr_v2_dataset and args.zarr_v2_dataset not in ZARR_V2_DATASETS:
-        raise ValueError(
-            f'Invalid zarr-v2-dataset: {args.zarr_v2_dataset}. Must be one of: {ZARR_V2_DATASETS}'
-        )
-    # Validate zarr-v3-dataset argument
-    if args.zarr_v3_dataset and args.zarr_v3_dataset not in ZARR_V3_DATASETS:
-        raise ValueError(
-            f'Invalid zarr-v3-dataset: {args.zarr_v3_dataset}. Must be one of: {ZARR_V3_DATASETS}'
-        )
+    if args.approach not in APPROACHES:
+        raise ValueError(f'Invalid approach: {args.approach}. Must be one of: {APPROACHES}')
 
-    if args.zarr_v2_dataset:
-        url = f'{BASE_URL}/{args.approach}/v2/{args.zarr_v2_dataset}'
-    elif args.zarr_v3_dataset:
-        url = f'{BASE_URL}/{args.approach}/v3/{args.zarr_v3_dataset}'
+    # Validate dataset argument
+    if args.dataset not in DATASETS_KEYS:
+        raise ValueError(f'Invalid dataset: {args.dataset}. Must be one of: {DATASETS_KEYS}')
+
+    url = f'{BASE_URL}/{args.approach}/{args.zarr_version}/{args.dataset}'
 
     # print url with emojis
     print(f'🚀  Running benchmark for {args.approach} approach on {url} 🚀')
