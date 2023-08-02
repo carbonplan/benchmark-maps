@@ -26,7 +26,10 @@ def calc_chunk_dict(ds: xr.Dataset, target_mb: int, pixels_per_tile: int) -> dic
         target_chunks = {'time': int(target_mb // slice_mb)}
     else:
         slice_mb = data_bytesize * pixels_per_tile * pixels_per_tile * 1e-6
-        target_chunks = {'time': int(target_mb // slice_mb)}
+        time_chunk = int(target_mb // slice_mb)
+        while (ds.sizes['time'] % time_chunk) > 0:
+            time_chunk -= 1
+        target_chunks = {'time': time_chunk}
         if target_chunks['time'] > ds.sizes['time']:
             target_chunks['time'] = ds.sizes['time']
         target_chunks['x'] = pixels_per_tile
@@ -67,10 +70,9 @@ def pyramid(
 
     ds = xr.open_zarr(ds_path, chunks={}).rio.write_crs('EPSG:4326')
 
-    calc_chunk_dict(ds, target_mb=target_mb, pixels_per_tile=pixels_per_tile)
+    chunks = calc_chunk_dict(ds, target_mb=target_mb, pixels_per_tile=pixels_per_tile)
 
-    # other_chunks = {'time': chunks['time']}
-    other_chunks = {'time': 10}
+    other_chunks = {'time': chunks['time']}
     print(f'creating pyramids from {ds_path}...')
 
     # create pyramid
