@@ -121,19 +121,23 @@ async def run(
             end_mark = f'benchmark-{action}-level-{level}:end'
             label = f'benchmark-{action}-level-{level}'
             if action == 'zoom_in':
-                await page.keyboard.press('=')
-                await page.evaluate(
-                    f"""
-                        () => (window.performance.mark("{start_mark}"))
+                await asyncio.gather(
+                    page.evaluate(
+                        f"""
+                            () => (window.performance.mark("{start_mark}"))
                         """
-                ),
+                    ),
+                    page.keyboard.press('='),
+                )
 
             elif action == 'zoom_out':
-                await page.keyboard.press('-'),
-                await page.evaluate(
-                    f"""
-                        () => (window.performance.mark("{start_mark}"))
+                await asyncio.gather(
+                    page.evaluate(
+                        f"""
+                            () => (window.performance.mark("{start_mark}"))
                         """
+                    ),
+                    page.keyboard.press('-'),
                 )
 
             await mark_and_measure(page=page, start_mark=start_mark, end_mark=end_mark, label=label)
