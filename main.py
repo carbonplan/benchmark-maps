@@ -10,7 +10,8 @@ from playwright.async_api import async_playwright
 from rich import print
 
 BASE_URL = 'https://prototype-maps.vercel.app'
-DATASETS = {'direct-client': {'v2': ['c2', 'c3', 'c4', 'c5'], 'v3': ['c2', 'c3', 'c4', 'c5']}}
+DATASETS_KEYS = ['1MB-chunks', '5MB-chunks', '10MB-chunks', '25MB-chunks']
+DATASETS = {'direct-client': {'v2': DATASETS_KEYS, 'v3': DATASETS_KEYS}}
 ZARR_VERSIONS = list(DATASETS['direct-client'].keys())
 ZARR_V2_DATASETS = DATASETS['direct-client']['v2']
 ZARR_V3_DATASETS = DATASETS['direct-client']['v3']
