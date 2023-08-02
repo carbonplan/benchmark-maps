@@ -9,6 +9,14 @@ from cloud_detect import provider
 from playwright.async_api import async_playwright
 from rich import print
 
+BASE_URL = 'https://prototype-maps.vercel.app'
+DATASETS = {'direct-client': {'v2': ['c2', 'c3', 'c4', 'c5'], 'v3': ['c2', 'c3', 'c4', 'c5']}}
+ZARR_VERSIONS = list(DATASETS['direct-client'].keys())
+ZARR_V2_DATASETS = DATASETS['direct-client']['v2']
+ZARR_V3_DATASETS = DATASETS['direct-client']['v3']
+SUPPORTED_ACTIONS = ['zoom_in', 'zoom_out']
+
+
 # Get current timestamp
 now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
 
@@ -62,7 +70,7 @@ async def run(
     playwright,
     runs: int,
     run_number: int,
-    url: str = 'https://maps-demo-git-katamartin-benchmarking-carbonplan.vercel.app/',
+    url: str,
     playwright_python_version: str | None = None,
     provider_name: str | None = None,
     trace_dir: upath.UPath,
@@ -103,7 +111,6 @@ async def run(
             () => (window.performance.mark("benchmark-initial-load:start"))
             """
         ),
-        page.click('//div[text()="Display"]/following-sibling::button'),
     )
 
     # Wait for the timeout to be reached
@@ -161,6 +168,7 @@ async def run(
         'action': action,
         'zoom_level': zoom_level,
         'trace_path': str(json_path),
+        'url': url,
     }
 
     all_data.append(data)
@@ -169,13 +177,14 @@ async def run(
 # Define main function
 async def main(
     *,
+    url: str,
     runs: int,
-    detect_provider: bool = False,
     data_dir: upath.UPath,
     trace_dir: upath.UPath,
     action: str | None = None,
     zoom_level: int | None = None,
     headless: bool,
+    provider_name: str | None = None,
 ):
     # Get Playwright versions
     playwright_python_version = subprocess.run(
@@ -185,15 +194,13 @@ async def main(
     )
     playwright_python_version = playwright_python_version.stdout.split('\n')[1].split(': ')[1]
 
-    # Detect cloud provider
-    provider_name = provider() if detect_provider else 'unknown'
-
     # Run benchmark
     async with async_playwright() as playwright:
         for run_number in range(runs):
             try:
                 await run(
                     playwright=playwright,
+                    url=url,
                     runs=runs,
                     run_number=run_number + 1,
                     playwright_python_version=playwright_python_version,
@@ -220,25 +227,79 @@ if __name__ == '__main__':
     parser.add_argument(
         '--detect-provider', action='store_true', help='Detect provider', default=False
     )
+    parser.add_argument(
+        '--approach',
+        type=str,
+        default='direct-client',
+        help=f'Approach to use. Must be one of: {list(DATASETS.keys())}',
+    )
+    parser.add_argument(
+        '--zarr-v2-dataset',
+        type=str,
+        default=None,
+        help=f'Zarr v2 dataset name. Must be one of: {ZARR_V2_DATASETS}',
+    )
+    parser.add_argument(
+        '--zarr-v3-dataset',
+        type=str,
+        default=None,
+        help=f'Zarr v3 dataset name. Must be one of: {ZARR_V3_DATASETS}',
+    )
     parser.add_argument('--non-headless', action='store_true', help='Run in non-headless mode')
     parser.add_argument('--s3-bucket', type=str, default=None, help='S3 bucket name')
-    parser.add_argument('--action', type=str, default=None, help='Action to perform')
+    parser.add_argument(
+        '--action',
+        type=str,
+        default=None,
+        help=f'Action to perform. Must be one of: {SUPPORTED_ACTIONS}',
+    )
     parser.add_argument('--zoom-level', type=int, default=None, help='Zoom level')
 
     args = parser.parse_args()
 
-    # Perform operation
-    supported_actions = ['zoom_in', 'zoom_out']
-    if args.action and args.action not in supported_actions:
+    # Validate arguments
+    if args.action and args.action not in SUPPORTED_ACTIONS:
         raise ValueError(
-            f'Invalid action: {args.action}. Supported operations are: {supported_actions}'
+            f'Invalid action: {args.action}. Supported operations are: {SUPPORTED_ACTIONS}'
         )
 
     if args.action and args.action.startswith('zoom') and args.zoom_level is None:
         raise ValueError(
             f'Invalid zoom level: {args.zoom_level}. Must be an integer greater than 0.'
         )
+    # Validate approach argument
+    if args.approach not in DATASETS.keys():
+        raise ValueError(
+            f'Invalid approach: {args.approach}. Must be one of: {list(DATASETS.keys())}'
+        )
+    # zarr-v2-dataset argument and zarr-v3-dataset argument are mutually exclusive
+    if args.zarr_v2_dataset and args.zarr_v3_dataset:
+        raise ValueError(
+            'Invalid arguments: zarr-v2-dataset and zarr-v3-dataset are mutually exclusive.'
+        )
+    # raise if neither zarr-v2-dataset nor zarr-v3-dataset is provided
+    if not args.zarr_v2_dataset and not args.zarr_v3_dataset:
+        raise ValueError(
+            'Invalid arguments: either --zarr-v2-dataset or --zarr-v3-dataset must be provided.'
+        )
+    # Validate zarr-v2-dataset argument
+    if args.zarr_v2_dataset and args.zarr_v2_dataset not in ZARR_V2_DATASETS:
+        raise ValueError(
+            f'Invalid zarr-v2-dataset: {args.zarr_v2_dataset}. Must be one of: {ZARR_V2_DATASETS}'
+        )
+    # Validate zarr-v3-dataset argument
+    if args.zarr_v3_dataset and args.zarr_v3_dataset not in ZARR_V3_DATASETS:
+        raise ValueError(
+            f'Invalid zarr-v3-dataset: {args.zarr_v3_dataset}. Must be one of: {ZARR_V3_DATASETS}'
+        )
 
+    if args.zarr_v2_dataset:
+        url = f'{BASE_URL}/{args.approach}/v2/{args.zarr_v2_dataset}'
+    elif args.zarr_v3_dataset:
+        url = f'{BASE_URL}/{args.approach}/v3/{args.zarr_v3_dataset}'
+
+    # print url with emojis
+    print(f'🚀  Running benchmark for {args.approach} approach on {url} 🚀')
     # Define directories for data and screenshots
     root_dir = upath.UPath(__file__).parent
     data_dir = root_dir / 'data'
@@ -250,10 +311,14 @@ if __name__ == '__main__':
     )
     trace_dir.mkdir(exist_ok=True, parents=True)
 
+    # Detect cloud provider
+    provider_name = provider() if args.detect_provider else 'unknown'
+
     asyncio.run(
         main(
             runs=args.runs,
-            detect_provider=args.detect_provider,
+            url=url,
+            provider_name=provider_name,
             data_dir=data_dir,
             trace_dir=trace_dir,
             action=args.action,
