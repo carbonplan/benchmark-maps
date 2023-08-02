@@ -26,7 +26,10 @@ def calc_chunk_dict(ds: xr.Dataset, target_mb: int, pixels_per_tile: int) -> dic
         target_chunks = {'time': int(target_mb // slice_mb)}
     else:
         slice_mb = data_bytesize * pixels_per_tile * pixels_per_tile * 1e-6
-        target_chunks = {'time': int(target_mb // slice_mb)}
+        time_chunk = int(target_mb // slice_mb)
+        while (ds.sizes['time'] % time_chunk) > 0:
+            time_chunk -= 1
+        target_chunks = {'time': time_chunk}
         if target_chunks['time'] > ds.sizes['time']:
             target_chunks['time'] = ds.sizes['time']
         target_chunks['x'] = pixels_per_tile
@@ -35,7 +38,13 @@ def calc_chunk_dict(ds: xr.Dataset, target_mb: int, pixels_per_tile: int) -> dic
 
 
 def pyramid(
-    ds_path: str, *, target: str, levels: int = 2, pixels_per_tile: int = 128, target_mb: int = 5
+    ds_path: str,
+    *,
+    target: str,
+    levels: int = 2,
+    pixels_per_tile: int = 128,
+    target_mb: int = 5,
+    projection: str = 'web-mercator',
 ) -> str:
     '''Create a data pyramid from an xarray Dataset
 
@@ -72,14 +81,21 @@ def pyramid(
         levels=levels,
         pixels_per_tile=pixels_per_tile,
         other_chunks=other_chunks,
+        projection=projection,
     )
 
     print('setting metadata...')
     # set encoding
     for child in dta.children:
         dta[child].ds = set_web_zarr_encoding(
-            dta[child].ds, codec_config={'id': 'gzip', 'level': 1}, float_dtype='float32'
+            dta[child].ds,
+            codec_config={'id': 'gzip', 'level': 1},
+            float_dtype='float32',
+            int_dtype='int32',
         )
+        for var in ['time', 'time_bnds']:
+            if var in dta[child].ds:
+                dta[child].ds[var].encoding['dtype'] = 'int32'
 
     # write to zarr
     print(f'writing to {target}...')
