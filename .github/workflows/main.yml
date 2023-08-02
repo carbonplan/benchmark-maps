@@ -52,14 +52,30 @@ jobs:
       - name: Run test benchmarks
         if: github.event_name != 'workflow_dispatch'
         run: |
-          python main.py --runs 10
+          python main.py \
+            --detect-provider \
+            --approach direct-client \
+            --dataset 5MB-chunks \
+            --zarr-version v2
+
+          python main.py \
+            --approach direct-client \
+            --dataset 10MB-chunks \
+            --zarr-version v3 \
+            --action zoom_in \
+            --zoom-level 1
 
       - name: Run benchmarks using user inputs
         if: github.event_name == 'workflow_dispatch'
         run: |
           python main.py \
                 --runs ${{ github.event.inputs.runs }} \
-                --detect-provider
+                --detect-provider \
+                --approach direct-client \
+                --dataset 10MB-chunks \
+                --zarr-version v3 \
+                --action zoom_in \
+                --zoom-level 1
 
       - name: Create Pull Request
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.upload-results == 'true'
