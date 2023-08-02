@@ -68,6 +68,7 @@ async def run(
     trace_dir: upath.UPath,
     action: str | None = None,
     zoom_level: int | None = None,
+    headless: bool = False,
 ):
     # Launch browser and create new page
     chrome_args = [
@@ -78,7 +79,7 @@ async def run(
         '--ignore-gpu-blocklist',
         '--use-angle=vulkan',
     ]
-    browser = await playwright.chromium.launch(headless=False, args=chrome_args)
+    browser = await playwright.chromium.launch(headless=headless, args=chrome_args)
 
     context = await browser.new_context()
     page = await context.new_page()
@@ -174,7 +175,7 @@ async def main(
     trace_dir: upath.UPath,
     action: str | None = None,
     zoom_level: int | None = None,
-    s3_bucket: str | None = None,
+    headless: bool,
 ):
     # Get Playwright versions
     playwright_python_version = subprocess.run(
@@ -200,6 +201,7 @@ async def main(
                     trace_dir=trace_dir,
                     action=action,
                     zoom_level=zoom_level,
+                    headless=headless,
                 )
             except Exception as exc:
                 print(f'{run_number + 1} timed out : {exc}')
@@ -218,6 +220,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--detect-provider', action='store_true', help='Detect provider', default=False
     )
+    parser.add_argument('--non-headless', action='store_true', help='Run in non-headless mode')
     parser.add_argument('--s3-bucket', type=str, default=None, help='S3 bucket name')
     parser.add_argument('--action', type=str, default=None, help='Action to perform')
     parser.add_argument('--zoom-level', type=int, default=None, help='Zoom level')
@@ -255,6 +258,6 @@ if __name__ == '__main__':
             trace_dir=trace_dir,
             action=args.action,
             zoom_level=args.zoom_level,
-            s3_bucket=args.s3_bucket,
+            headless=not args.non_headless,
         )
     )
