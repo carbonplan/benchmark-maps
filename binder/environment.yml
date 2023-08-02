@@ -4,15 +4,18 @@ channels:
   - nodefaults
 dependencies:
   - python=3.10
+  - coiled
+  - distributed
+  - hvplot
   - pandas
   - pip
   - pytest
   - requests
-  - typing-extensions
   - rich
-  - hvplot
-  - distributed
-  - coiled
+  - s3fs
+  - typing-extensions
+  - universal_pathlib
   - pip:
       - pytest-playwright
       - cloud-detect
+      - opencv-python
