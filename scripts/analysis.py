@@ -90,7 +90,7 @@ def get_start_time(*, trace_events):
     return next((x['ts'] for x in trace_events if x['ts']), None) * 1e-3
 
 
-def extract_screenshots(*, trace_events):
+def calculate_snapshot_rmse(*, trace_events, snapshots):
     """
     Extract screenshots from a list of Chromium trace events.
 
@@ -99,6 +99,9 @@ def extract_screenshots(*, trace_events):
 
     trace_events: list
          The list of trace events.
+
+    snapshots: list
+        List of snapshots to compare screenshots against
 
     Returns
     -------
@@ -112,15 +115,12 @@ def extract_screenshots(*, trace_events):
         [event for event in trace_events if event['name'] == 'Screenshot']
     )
     screenshots = process_rendering_events(screenshots)
-    baseline = pd.read_json('data/baselines.json', orient='index')
-    zoom0_baseline = base64_to_img(baseline.loc[0, 'baseline'])
-    zoom1_baseline = base64_to_img(baseline.loc[1, 'baseline'])
-    zoom2_baseline = base64_to_img(baseline.loc[2, 'baseline'])
-    for ind, row in screenshots.iterrows():
-        frame = base64_to_img(row['args.snapshot'])
-        screenshots.loc[ind, 'rmse_zoom0'] = calculate_rmse(frame, zoom0_baseline)
-        screenshots.loc[ind, 'rmse_zoom1'] = calculate_rmse(frame, zoom1_baseline)
-        screenshots.loc[ind, 'rmse_zoom2'] = calculate_rmse(frame, zoom2_baseline)
+    for action_ind, snapshot_base64 in enumerate(snapshots):
+        snapshot = base64_to_img(snapshot_base64)
+        var = f'rmse_snapshot_{action_ind}'
+        for ind, row in screenshots.iterrows():
+            frame = base64_to_img(row['args.snapshot'])
+            screenshots.loc[ind, var] = calculate_rmse(frame, snapshot)
     return screenshots
 
 
@@ -278,19 +278,18 @@ def plot_frames(df: pd.DataFrame, start_time: float, *, yl: int = 1):
     return plots['idle'] * plots['isPartial'] * plots['dropped'] * plots['drawn']
 
 
-def plot_screenshot_rmse(
-    df: pd.DataFrame,
-    start_time: float,
-):
+def plot_screenshot_rmse(df: pd.DataFrame, start_time: float, zoom_level: int):
     """
     Plot difference between the screenshots and baseline frames
     """
     opts = {'width': 1000, 'xlabel': 'Time (ms)', 'ylabel': 'RMSE', 'title': 'Sceenshots'}
     df['startTime_relative'] = df['startTime'] - start_time
-    z0 = df.plot.line(x='startTime_relative', y='rmse_zoom0', label='Zoom 0 baseline')
-    z1 = df.plot.line(x='startTime_relative', y='rmse_zoom1', label='Zoom 1 baseline')
-    z2 = df.plot.line(x='startTime_relative', y='rmse_zoom2', label='Zoom 2 baseline')
-    return (z0 * z1 * z2).opts(**opts)
+    plt = df.plot.line(x='startTime_relative', y='rmse_snapshot_0', label='zoom 0')
+    for ind in range(1, zoom_level + 1):
+        plt = plt * df.plot.line(
+            x='startTime_relative', y=f'rmse_snapshot_{ind}', label=f'zoom {ind}'
+        )
+    return plt.opts(**opts)
 
 
 # Parse command line arguments and run main function
@@ -305,21 +304,26 @@ if __name__ == '__main__':
         root_dir = upath.UPath(args.s3_bucket)
     else:
         root_dir = upath.UPath('.')
-    trace_data_fp = root_dir / f'chrome-devtools-traces/{args.timestamp}-{args.run}.json'
+    metadata_fp = root_dir / f'data/data-{args.timestamp}.json'
+    metadata = json.loads(metadata_fp.read_text())[args.run - 1]
+    approach, zarr_version, dataset = metadata['url'].split('/')[-3:]
     # Load trace events
-    trace_events = json.loads(trace_data_fp.read_text())['traceEvents']
+    trace_events = json.loads(upath.UPath(metadata['trace_path']).read_text())['traceEvents']
     # Get start time
     start_time = get_start_time(trace_events=trace_events)
     # Extract request data
-    url_filter = 'carbonplan-maps.s3.us-west-2.amazonaws.com/v2/demo'
+    url_filter = 'carbonplan-benchmarks.s3.us-west-2.amazonaws.com/data/'
     filtered_request_data = extract_request_data(trace_events=trace_events, url_filter=url_filter)
     # Extract frame data
     filtered_frames_data = extract_frame_data(trace_events=trace_events)
     # Extract screenshot data
-    screenshot_data = extract_screenshots(trace_events=trace_events)
+    snapshots = json.loads(upath.UPath('data/baselines.json').read_text())[approach][zarr_version][
+        dataset
+    ]
+    screenshot_data = calculate_snapshot_rmse(trace_events=trace_events, snapshots=snapshots)
     # # Create plots
     requests_plt = plot_requests(filtered_request_data, start_time)
     frames_plt = plot_frames(filtered_frames_data, start_time, yl=2.5)
-    rmse_plt = plot_screenshot_rmse(screenshot_data, start_time)
+    rmse_plt = plot_screenshot_rmse(screenshot_data, start_time, zoom_level=metadata['zoom_level'])
     # # Show plot using bokeh server
     hvplot.show((requests_plt + frames_plt + rmse_plt).cols(1))
