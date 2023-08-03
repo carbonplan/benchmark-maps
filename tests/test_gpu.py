@@ -7,7 +7,9 @@ os_name = platform.system()
 chrome_args = ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist']
 
 if os_name == 'Linux':
-    chrome_args.extend(['--enable-features=Vulkan,UseSkiaRenderer', '--use-angle=vulkan'])
+    chrome_args.extend(
+        ['--enable-features=Vulkan,UseSkiaRenderer', '--use-angle=vulkan', '--enable-gpu']
+    )
 
 
 def test_gpu_hardware_acceleration():
