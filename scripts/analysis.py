@@ -6,6 +6,7 @@ import cv2 as cv
 import hvplot.pandas
 import numpy as np
 import pandas as pd
+import s3fs
 import upath
 from parsing import extract_event_type, extract_frame_data, extract_request_data
 from plotting import plot_frames, plot_requests, plot_zoom_levels
@@ -97,9 +98,9 @@ def process_run(*, metadata_path: upath.UPath, run: int):
     # Extract frame data
     filtered_frames_data = extract_frame_data(trace_events=trace_events)
     # Extract screenshot data
-    snapshots = json.loads(upath.UPath('data/baselines.json').read_text())[approach][zarr_version][
-        dataset
-    ]
+    s3 = s3fs.S3FileSystem(anon=True)
+    with s3.open('s3://carbonplan-benchmarks/benchmark-data/baselines.json') as f:
+        snapshots = json.loads(f.read())[approach][zarr_version][dataset]
     screenshot_data = calculate_snapshot_rmse(trace_events=trace_events, snapshots=snapshots)
     # Get action durations
     action_data = process_zoom_levels(
