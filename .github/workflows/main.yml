@@ -55,11 +55,13 @@ jobs:
           python main.py \
             --detect-provider \
             --approach direct-client \
-            --zarr-v2-dataset c2
+            --dataset 5MB-chunks \
+            --zarr-version v2
 
           python main.py \
             --approach direct-client \
-            --zarr-v3-dataset c2 \
+            --dataset 10MB-chunks \
+            --zarr-version v3 \
             --action zoom_in \
             --zoom-level 1
 
@@ -70,7 +72,8 @@ jobs:
                 --runs ${{ github.event.inputs.runs }} \
                 --detect-provider \
                 --approach direct-client \
-                --zarr-v3-dataset c2 \
+                --dataset 10MB-chunks \
+                --zarr-version v3 \
                 --action zoom_in \
                 --zoom-level 1
 
