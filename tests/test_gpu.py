@@ -4,7 +4,7 @@ from playwright.sync_api import sync_playwright
 
 # get the OS name
 os_name = platform.system()
-chrome_args = ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist']
+chrome_args = ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist', '--disable-software-rasterizer']
 
 if os_name == 'Linux':
     chrome_args.extend(
