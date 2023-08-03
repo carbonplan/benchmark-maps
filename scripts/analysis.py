@@ -86,20 +86,8 @@ def process_zoom_levels(*, trace_events, screenshot_data, zoom_level):
     return action_data
 
 
-# Parse command line arguments and run main function
-if __name__ == '__main__':
-    # Parse input args
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--timestamp', type=str)
-    parser.add_argument('--run', type=int, default=1)
-    parser.add_argument('--s3-bucket', type=str, default=None)
-    args = parser.parse_args()
-    if args.s3_bucket is not None:
-        root_dir = upath.UPath(args.s3_bucket)
-    else:
-        root_dir = upath.UPath('.')
-    metadata_fp = root_dir / f'data/data-{args.timestamp}.json'
-    metadata = json.loads(metadata_fp.read_text())[args.run - 1]
+def process_run(*, metadata_path: upath.UPath, run: int):
+    metadata = json.loads(metadata_path.read_text())[run - 1]
     approach, zarr_version, dataset = metadata['url'].split('/')[-3:]
     # Load trace events
     trace_events = json.loads(upath.UPath(metadata['trace_path']).read_text())['traceEvents']
@@ -119,10 +107,32 @@ if __name__ == '__main__':
         screenshot_data=screenshot_data,
         zoom_level=metadata['zoom_level'],
     )
+    data = {
+        'request_data': filtered_request_data,
+        'frames_data': filtered_frames_data,
+        'action_data': action_data,
+    }
+    return data
+
+
+# Parse command line arguments and run main function
+if __name__ == '__main__':
+    # Parse input args
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--timestamp', type=str)
+    parser.add_argument('--run', type=int, default=1)
+    parser.add_argument('--s3-bucket', type=str, default=None)
+    args = parser.parse_args()
+    if args.s3_bucket is not None:
+        root_dir = upath.UPath(args.s3_bucket)
+    else:
+        root_dir = upath.UPath('.')
+    metadata_fp = root_dir / f'data/data-{args.timestamp}.json'
+    data = process_run(metadata_path=metadata_fp, run=args.run)
     # # Create plots
-    requests_plt = plot_requests(filtered_request_data)
-    frames_plt = plot_frames(filtered_frames_data, yl=2.5)
-    zoom_plt_a = plot_zoom_levels(action_data, yl=-1, yh=len(filtered_request_data) + 1)
-    zoom_plt_b = plot_zoom_levels(action_data)
+    requests_plt = plot_requests(data['request_data'])
+    frames_plt = plot_frames(data['frames_data'], yl=2.5)
+    zoom_plt_a = plot_zoom_levels(data['action_data'], yl=-1, yh=len(data['request_data']) + 1)
+    zoom_plt_b = plot_zoom_levels(data['action_data'])
     # # Show plot using bokeh server
     hvplot.show(((zoom_plt_a * requests_plt) + (zoom_plt_b * frames_plt)).cols(1))
