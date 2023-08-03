@@ -179,7 +179,6 @@ async def main(
     url: str,
     runs: int,
     data_dir: upath.UPath,
-    trace_dir: upath.UPath,
     action: str | None = None,
     zoom_level: int | None = None,
     headless: bool,
@@ -204,7 +203,7 @@ async def main(
                     run_number=run_number + 1,
                     playwright_python_version=playwright_python_version,
                     provider_name=provider_name,
-                    trace_dir=trace_dir,
+                    trace_dir=data_dir,
                     action=action,
                     zoom_level=zoom_level,
                     headless=headless,
@@ -215,8 +214,7 @@ async def main(
 
     # Write the data to a json file
     data_path = data_dir / f'data-{now}.json'
-    with open(data_path, 'w') as outfile:
-        json.dump(all_data, outfile, indent=4, sort_keys=True)
+    data_path.write_text(json.dumps(all_data, indent=2, sort_keys=True))
 
 
 # Parse command line arguments and run main function
@@ -280,14 +278,10 @@ if __name__ == '__main__':
     print(f'🚀  Running benchmark for {args.approach} approach on {url} 🚀')
     # Define directories for data and screenshots
     root_dir = upath.UPath(__file__).parent
-    data_dir = root_dir / 'data'
-    data_dir.mkdir(exist_ok=True, parents=True)
-    trace_dir = (
-        upath.UPath(args.s3_bucket) / 'chrome-devtools-traces'
-        if args.s3_bucket
-        else root_dir / 'chrome-devtools-traces'
+    data_dir = (
+        upath.UPath(args.s3_bucket) / 'benchmark-data' if args.s3_bucket else root_dir / 'data'
     )
-    trace_dir.mkdir(exist_ok=True, parents=True)
+    data_dir.mkdir(exist_ok=True, parents=True)
 
     # Detect cloud provider
     provider_name = provider() if args.detect_provider else 'unknown'
@@ -298,7 +292,6 @@ if __name__ == '__main__':
             url=url,
             provider_name=provider_name,
             data_dir=data_dir,
-            trace_dir=trace_dir,
             action=args.action,
             zoom_level=args.zoom_level,
             headless=not args.non_headless,
