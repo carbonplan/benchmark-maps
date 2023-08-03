@@ -8,6 +8,7 @@ import hvplot.pandas
 import numpy as np
 import pandas as pd
 import upath
+from holoviews import opts
 
 pd.options.plotting.backend = 'holoviews'
 
@@ -80,7 +81,7 @@ def get_start_time(*, trace_events):
     ----------
 
     trace_events: list
-         The list of trace events.
+        The list of trace events.
 
     Returns
     -------
@@ -98,7 +99,7 @@ def calculate_snapshot_rmse(*, trace_events, snapshots):
     ----------
 
     trace_events: list
-         The list of trace events.
+        The list of trace events.
 
     snapshots: list
         List of snapshots to compare screenshots against
@@ -132,7 +133,7 @@ def extract_request_data(*, trace_events, url_filter: str = None):
     ----------
 
     trace_events: list
-         The list of trace events.
+        The list of trace events.
     url_filter : str, optional
         If specified, only include requests where the URL contains this string.
 
@@ -184,13 +185,17 @@ def extract_markers(*, trace_events):
     ----------
 
     trace_events: list
-         The list of trace events.
+        The list of trace events.
+
+    zoom_levels: int
+        Number of zoom levels in the test.
 
     Returns
     -------
     markers : DataFrame containing information about markers
     """
     markers = pd.json_normalize([event for event in trace_events if 'benchmark-' in event['name']])
+    markers = process_rendering_events(markers)
     return markers
 
 
@@ -202,7 +207,7 @@ def extract_frame_data(*, trace_events):
     ----------
 
     trace_events: list
-         The list of trace events.
+        The list of trace events.
 
     Returns
     -------
@@ -286,28 +291,57 @@ def plot_frames(df: pd.DataFrame, start_time: float, *, yl: int = 1):
     df['rectangle'] = df.apply(
         lambda x: (x['startTime'] - start_time, yl, x['endTime'] - start_time, yl + 1), axis=1
     )
-    opts = {'width': 1000, 'xlabel': 'Time (ms)', 'yaxis': None, 'title': 'Frames'}
+    plt_opts = {'width': 1000, 'xlabel': 'Time (ms)', 'yaxis': None, 'title': 'Frames'}
     subsets = {'idle': 'lightgrey', 'isPartial': 'yellow', 'dropped': 'red', 'drawn': 'lightgreen'}
     plots = {}
     for key, value in subsets.items():
         subset = df[df[key]]
         plots[key] = hv.Rectangles(subset['rectangle'].to_list())
-        plots[key].opts(**opts, color=value)
+        plots[key].opts(**plt_opts, color=value)
     return plots['idle'] * plots['isPartial'] * plots['dropped'] * plots['drawn']
 
 
-def plot_screenshot_rmse(df: pd.DataFrame, start_time: float, zoom_level: int):
+def plot_screenshot_rmse(
+    df: pd.DataFrame, markers: pd.DataFrame, start_time: float, zoom_level: int
+):
     """
     Plot difference between the screenshots and baseline frames
     """
-    opts = {'width': 1000, 'xlabel': 'Time (ms)', 'ylabel': 'RMSE', 'title': 'Sceenshots'}
+    plt_opts = {'width': 1000, 'xlabel': 'Time (ms)', 'ylabel': 'RMSE', 'title': 'Sceenshots'}
+    color_opts = [
+        {'color': 'lightblue'},
+        {'color': 'orange'},
+        {'color': 'lightgreen'},
+        {'color': 'red'},
+        {'color': 'purple'},
+    ]
     df['startTime_relative'] = df['startTime'] - start_time
-    plt = df.plot.line(x='startTime_relative', y='rmse_snapshot_0', label='zoom 0')
+    markers['startTime_relative'] = markers['startTime'] - start_time
+    plt = df.plot.line(
+        x='startTime_relative', y='rmse_snapshot_0', label='zoom 0', color=color_opts[0]['color']
+    )
+    start_line = hv.VLine(
+        markers[markers['name'] == 'benchmark-initial-load:start'].loc[0, 'startTime_relative']
+    )
+    end_line = hv.VLine(df.iloc[df['rmse_snapshot_0'].argmin()]['startTime_relative'])
+    plt = (plt * start_line * end_line).opts(opts.VLine(**color_opts[0]))
     for ind in range(1, zoom_level + 1):
-        plt = plt * df.plot.line(
-            x='startTime_relative', y=f'rmse_snapshot_{ind}', label=f'zoom {ind}'
+        rmse = df.plot.line(
+            x='startTime_relative',
+            y=f'rmse_snapshot_{ind}',
+            label=f'zoom {ind}',
+            color=color_opts[ind]['color'],
         )
-    return plt.opts(**opts)
+        markers[markers['name'] == f'benchmark-zoom_in-level-{ind-1}:start']
+        df.iloc[df[f'rmse_snapshot_{ind-1}'].argmin()]['startTime_relative']
+        start_line = hv.VLine(
+            markers[markers['name'] == f'benchmark-zoom_in-level-{ind-1}:start'].iloc[0][
+                'startTime_relative'
+            ]
+        )
+        end_line = hv.VLine(df.iloc[df[f'rmse_snapshot_{ind}'].argmin()]['startTime_relative'])
+        plt = plt * rmse * (start_line * end_line).opts(opts.VLine(**color_opts[ind]))
+    return plt.opts(**plt_opts)
 
 
 # Parse command line arguments and run main function
@@ -344,6 +378,8 @@ if __name__ == '__main__':
     # # Create plots
     requests_plt = plot_requests(filtered_request_data, start_time)
     frames_plt = plot_frames(filtered_frames_data, start_time, yl=2.5)
-    rmse_plt = plot_screenshot_rmse(screenshot_data, start_time, zoom_level=metadata['zoom_level'])
+    rmse_plt = plot_screenshot_rmse(
+        screenshot_data, markers, start_time, zoom_level=metadata['zoom_level']
+    )
     # # Show plot using bokeh server
     hvplot.show((requests_plt + frames_plt + rmse_plt).cols(1))
