@@ -10,5 +10,7 @@ RUN mamba env update --prefix ${CONDA_DIR} --file /tmp/environment.yml
 USER root
 RUN apt-get update && xargs -a /tmp/apt.txt apt install -y && rm -r /var/lib/apt/lists/*
 
+
+
 # Switch back to jovyan user
 USER jovyan
