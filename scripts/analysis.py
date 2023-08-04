@@ -88,7 +88,23 @@ def process_zoom_levels(*, trace_events, screenshot_data, zoom_level):
 
 
 def process_run(*, metadata_path: upath.UPath, run: int):
-    metadata = json.loads(metadata_path.read_text())[run - 1]
+    """
+    Process the results from a benchmarking run.
+
+    Parameters
+    ----------
+
+    metadata_path: upath
+        Path to metadata file for a specific run.
+
+    run: int
+        Integer index of run to process.
+
+    Returns
+    -------
+    data : Dict containing request_data, frames_data, and action_data for the run.
+    """
+    metadata = json.loads(metadata_path.read_text())[run]
     approach, zarr_version, dataset = metadata['url'].split('/')[-3:]
     # Load trace events
     trace_events = json.loads(upath.UPath(metadata['trace_path']).read_text())['traceEvents']
@@ -121,7 +137,7 @@ if __name__ == '__main__':
     # Parse input args
     parser = argparse.ArgumentParser()
     parser.add_argument('--timestamp', type=str)
-    parser.add_argument('--run', type=int, default=1)
+    parser.add_argument('--run', type=int, default=0)
     parser.add_argument('--s3-bucket', type=str, default=None)
     args = parser.parse_args()
     if args.s3_bucket is not None:
