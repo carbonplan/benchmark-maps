@@ -70,6 +70,9 @@ async def run(
     runs: int,
     run_number: int,
     url: str,
+    approach: str,
+    dataset: str,
+    zarr_version: str,
     playwright_python_version: str | None = None,
     provider_name: str | None = None,
     trace_dir: upath.UPath,
@@ -99,11 +102,25 @@ async def run(
     print(f'[bold cyan]🚀 Starting benchmark run: {run_number}/{runs}...[/bold cyan]')
 
     # Go to URL
-
+    print(
+        f'🚀  Running benchmark for approach: {approach}, dataset: {dataset}, zarr_version: {zarr_version} on {url} 🚀'
+    )
     await page.goto(url)
 
-    # Focus on and click the map element
-    await asyncio.gather(page.focus('.mapboxgl-canvas'), page.click('.mapboxgl-canvas'))
+    # select approach in radio input
+    await page.click(f'label:has(input[value="{approach}"])')
+
+    # select 'Zarr version' dropdown
+    await page.select_option('div:has-text("Zarr version") select', f'{zarr_version}')
+
+    # Wait for the dropdown to be visible
+    await page.wait_for_selector('text=Dataset')
+
+    # Find the select element that is a child of the div containing the 'Dataset' text
+    dataset_dropdown = await page.query_selector(
+        'xpath=//div[text()="Dataset"]/following-sibling::div//select'
+    )
+    await dataset_dropdown.select_option(dataset)
 
     await asyncio.gather(
         page.evaluate(
@@ -111,6 +128,8 @@ async def run(
             () => (window.performance.mark("benchmark-initial-load:start"))
             """
         ),
+        page.focus('.mapboxgl-canvas'),
+        page.click('.mapboxgl-canvas'),
     )
 
     # Wait for the timeout to be reached
@@ -120,8 +139,6 @@ async def run(
         end_mark='benchmark-initial-load:end',
         label='benchmark-initial-load',
     )
-
-    await asyncio.gather(page.focus('.mapboxgl-canvas'), page.click('.mapboxgl-canvas'))
 
     if zoom_level:
         for level in range(zoom_level):
@@ -179,6 +196,9 @@ async def main(
     *,
     url: str,
     runs: int,
+    approach: str,
+    dataset: str,
+    zarr_version: str,
     data_dir: upath.UPath,
     action: str | None = None,
     zoom_level: int | None = None,
@@ -200,6 +220,9 @@ async def main(
                 await run(
                     playwright=playwright,
                     url=url,
+                    approach=approach,
+                    dataset=dataset,
+                    zarr_version=zarr_version,
                     runs=runs,
                     run_number=run_number + 1,
                     playwright_python_version=playwright_python_version,
@@ -273,10 +296,12 @@ if __name__ == '__main__':
     if args.dataset not in DATASETS_KEYS:
         raise ValueError(f'Invalid dataset: {args.dataset}. Must be one of: {DATASETS_KEYS}')
 
-    url = f'{BASE_URL}/{args.approach}/{args.zarr_version}/{args.dataset}'
+    # Validate zarr version argument
+    if args.zarr_version not in ZARR_VERSIONS:
+        raise ValueError(
+            f'Invalid zarr version: {args.zarr_version}. Must be one of: {ZARR_VERSIONS}'
+        )
 
-    # print url with emojis
-    print(f'🚀  Running benchmark for {args.approach} approach on {url} 🚀')
     # Define directories for data and screenshots
     root_dir = upath.UPath(__file__).parent
     data_dir = (
@@ -290,7 +315,10 @@ if __name__ == '__main__':
     asyncio.run(
         main(
             runs=args.runs,
-            url=url,
+            approach=args.approach,
+            dataset=args.dataset,
+            zarr_version=args.zarr_version,
+            url=BASE_URL,
             provider_name=provider_name,
             data_dir=data_dir,
             action=args.action,
