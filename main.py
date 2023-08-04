@@ -296,6 +296,11 @@ if __name__ == '__main__':
         raise ValueError(
             f'Invalid zoom level: {args.zoom_level}. Must be an integer greater than 0.'
         )
+
+    if args.zoom_level and args.action is None:
+        raise ValueError(
+            f'Invalid zoom level: {args.zoom_level}. --action must be set if zoom-level is greater than 0.'
+        )
     # Validate approach argument
     if args.approach not in APPROACHES:
         raise ValueError(f'Invalid approach: {args.approach}. Must be one of: {APPROACHES}')
