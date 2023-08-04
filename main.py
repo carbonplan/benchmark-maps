@@ -140,8 +140,6 @@ async def run(
         label='benchmark-initial-load',
     )
 
-    # await asyncio.gather(page.focus('.mapboxgl-canvas'), page.click('.mapboxgl-canvas'))
-
     if zoom_level:
         for level in range(zoom_level):
             start_mark = f'benchmark-{action}-level-{level}:start'
@@ -297,6 +295,12 @@ if __name__ == '__main__':
     # Validate dataset argument
     if args.dataset not in DATASETS_KEYS:
         raise ValueError(f'Invalid dataset: {args.dataset}. Must be one of: {DATASETS_KEYS}')
+
+    # Validate zarr version argument
+    if args.zarr_version not in ZARR_VERSIONS:
+        raise ValueError(
+            f'Invalid zarr version: {args.zarr_version}. Must be one of: {ZARR_VERSIONS}'
+        )
 
     # Define directories for data and screenshots
     root_dir = upath.UPath(__file__).parent
