@@ -3,10 +3,10 @@ import base64
 import json
 
 import cv2 as cv
+import fsspec
 import hvplot.pandas
 import numpy as np
 import pandas as pd
-import s3fs
 import upath
 from parsing import extract_event_type, extract_frame_data, extract_request_data
 from plotting import plot_frames, plot_requests, plot_zoom_levels
@@ -104,18 +104,23 @@ def process_run(*, metadata_path: upath.UPath, run: int):
     -------
     data : Dict containing request_data, frames_data, and action_data for the run.
     """
-    metadata = json.loads(metadata_path.read_text())[run]
+    if 's3' in metadata_path:
+        fs = fsspec.filesystem('s3', anon=True)
+    else:
+        fs = fsspec.filesystem('file')
+    with fs.open(metadata_path) as f:
+        metadata = json.loads(f.read())[run]
     approach, zarr_version, dataset = metadata['url'].split('/')[-3:]
     # Load trace events
-    trace_events = json.loads(upath.UPath(metadata['trace_path']).read_text())['traceEvents']
+    with fs.open(metadata['trace_path']) as f:
+        trace_events = json.loads(f.read())['traceEvents']
     # Extract request data
     url_filter = 'carbonplan-benchmarks.s3.us-west-2.amazonaws.com/data/'
     filtered_request_data = extract_request_data(trace_events=trace_events, url_filter=url_filter)
     # Extract frame data
     filtered_frames_data = extract_frame_data(trace_events=trace_events)
     # Extract screenshot data
-    s3 = s3fs.S3FileSystem(anon=True)
-    with s3.open('s3://carbonplan-benchmarks/benchmark-data/baselines.json') as f:
+    with fs.open('s3://carbonplan-benchmarks/benchmark-data/baselines.json') as f:
         snapshots = json.loads(f.read())[approach][zarr_version][dataset]
     screenshot_data = calculate_snapshot_rmse(trace_events=trace_events, snapshots=snapshots)
     # Get action durations
@@ -141,10 +146,9 @@ if __name__ == '__main__':
     parser.add_argument('--s3-bucket', type=str, default=None)
     args = parser.parse_args()
     if args.s3_bucket is not None:
-        root_dir = upath.UPath(args.s3_bucket)
+        metadata_fp = f'{args.s3_bucket}/benchmark-data/data-{args.timestamp}.json'
     else:
-        root_dir = upath.UPath('.')
-    metadata_fp = root_dir / f'data/data-{args.timestamp}.json'
+        metadata_fp = f'data/data-{args.timestamp}.json'
     data = process_run(metadata_path=metadata_fp, run=args.run)
     # # Create plots
     requests_plt = plot_requests(data['request_data'])
