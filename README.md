@@ -17,6 +17,32 @@
 
 ## Running the benchmarks
 
+The repository contains a set of benchmarks that can be run locally or remotely using `coiled`. The benchmarks are run using the `main.py` script. The script takes the following arguments:
+
+```bash
+$ python main.py --help
+usage: main.py [-h] [--runs RUNS] [--detect-provider] [--approach APPROACH] [--dataset DATASET]
+               [--zarr-version ZARR_VERSION] [--non-headless] [--s3-bucket S3_BUCKET] [--action ACTION]
+               [--zoom-level ZOOM_LEVEL]
+
+options:
+  -h, --help            show this help message and exit
+  --runs RUNS           Number of runs to perform
+  --detect-provider     Detect provider
+  --approach APPROACH   Approach to use. Must be one of: ['direct-client']
+  --dataset DATASET     dataset name. Must be one of: ['1MB-chunks', '5MB-chunks', '10MB-chunks', '25MB-chunks']
+  --zarr-version ZARR_VERSION
+                        Zarr version. Must be one of: ['v2', 'v3']
+  --non-headless        Run in non-headless mode
+  --s3-bucket S3_BUCKET
+                        S3 bucket name
+  --action ACTION       Action to perform. Must be one of: ['zoom_in', 'zoom_out']
+  --zoom-level ZOOM_LEVEL
+                        Zoom level
+```
+
+### Local
+
 To run the benchmarks, you will need to install `playwright` and software packages specified in `binder/environment.yml`. This can be done by running the following commands:
 
 ```bash
@@ -31,13 +57,15 @@ playwright install
 Once the environment is set up, you can run the benchmarks by running the following command:
 
 ```bash
-python main.py
+python main.py --dataset 1MB-chunks --zarr-version v2 --action zoom_in --zoom-level 4 --s3-bucket s3://carbonplan-benchmarks
 ```
+
+### Remote via Coiled
 
 To run the benchmark using `coiled`, you can run the following command:
 
 ```bash
-coiled run --container quay.io/carbonplan/benchmark-maps --file main.py bash main.sh
+coiled run --gpu --container quay.io/carbonplan/benchmark-maps --file main.py bash main.sh
 ```
 
 ## license
