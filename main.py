@@ -78,6 +78,7 @@ async def run(
     headless: bool = False,
 ):
     # Launch browser and create new page
+    # https://chromium.googlesource.com/chromium/src/+/master/ui/gl/gl_switches.cc
     chrome_args = [
         '--enable-features=Vulkan,UseSkiaRenderer',
         '--enable-unsafe-webgpu',
