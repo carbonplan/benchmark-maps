@@ -5,7 +5,6 @@ import cv2 as cv
 import fsspec
 import numpy as np
 import pandas as pd
-import upath
 
 from .parsing import extract_event_type, extract_frame_data, extract_request_data
 
@@ -64,11 +63,10 @@ def calculate_snapshot_rmse(*, trace_events, snapshots):
 
 def process_zoom_levels(*, trace_events, screenshot_data, zoom_level):
     markers = extract_event_type(trace_events=trace_events, event_name='benchmark-', exact=False)
+    hydrate = extract_event_type(trace_events=trace_events, event_name='afterHydrate')
     action_data = pd.DataFrame(
         {
-            'start_time': markers[markers['name'] == 'benchmark-initial-load:start'].iloc[0][
-                'startTime'
-            ],
+            'start_time': hydrate.iloc[0]['startTime'],
             'end_time': screenshot_data.iloc[screenshot_data['rmse_snapshot_0'].argmin()][
                 'startTime'
             ],
@@ -85,14 +83,11 @@ def process_zoom_levels(*, trace_events, screenshot_data, zoom_level):
     return action_data
 
 
-def process_run(*, metadata_path: upath.UPath, run: int):
+def load_data(*, metadata_path: str, run: int):
     """
-    Process the results from a benchmarking run.
+    Load data associated with a run
 
-    Parameters
-    ----------
-
-    metadata_path: upath
+    metadata_path: str
         Path to metadata file for a specific run.
 
     run: int
@@ -100,7 +95,7 @@ def process_run(*, metadata_path: upath.UPath, run: int):
 
     Returns
     -------
-    data : Dict containing request_data, frames_data, and action_data for the run.
+    metadata, trace_data
     """
     if 's3' in metadata_path:
         fs = fsspec.filesystem('s3', anon=True)
@@ -108,18 +103,60 @@ def process_run(*, metadata_path: upath.UPath, run: int):
         fs = fsspec.filesystem('file')
     with fs.open(metadata_path) as f:
         metadata = json.loads(f.read())[run]
-    approach, zarr_version, dataset = metadata['url'].split('/')[-3:]
-    # Load trace events
+    metadata['approach'] = metadata['url'].split('/')[-3]
+    metadata['zarr_version'] = metadata['url'].split('/')[-2]
+    metadata['dataset'] = metadata['url'].split('/')[-1]
     with fs.open(metadata['trace_path']) as f:
         trace_events = json.loads(f.read())['traceEvents']
+    return metadata, trace_events
+
+
+def load_snapshots(*, snapshot_path: str):
+    """
+    Load snapshots
+
+    snapshot_path: str
+        Path to JSON contains baseline snapshots.
+
+    Returns
+    -------
+    snapshots: dict containing base64 representation of baseline snapshots.
+    """
+    if 's3' in snapshot_path:
+        fs = fsspec.filesystem('s3', anon=True)
+    else:
+        fs = fsspec.filesystem('file')
+    with fs.open(snapshot_path) as f:
+        snapshots = json.loads(f.read())
+    return snapshots
+
+
+def process_run(*, metadata, trace_events, snapshots):
+    """
+    Process the results from a benchmarking run.
+
+    Parameters
+    ----------
+
+    metadata: dict
+        Metadata for a specific run.
+
+    trace_events: list
+        The list of trace events.
+
+    snapshots: list
+        List of snapshots to compare screenshots against
+    Returns
+    -------
+    data : Dict containing request_data, frames_data, and action_data for the run.
+    """
     # Extract request data
     url_filter = 'carbonplan-benchmarks.s3.us-west-2.amazonaws.com/data/'
     filtered_request_data = extract_request_data(trace_events=trace_events, url_filter=url_filter)
     # Extract frame data
     filtered_frames_data = extract_frame_data(trace_events=trace_events)
     # Extract screenshot data
-    with fs.open('s3://carbonplan-benchmarks/benchmark-data/baselines.json') as f:
-        snapshots = json.loads(f.read())[approach][zarr_version][dataset]
+    snapshots = snapshots[metadata['approach']][metadata['zarr_version']][metadata['dataset']]
     screenshot_data = calculate_snapshot_rmse(trace_events=trace_events, snapshots=snapshots)
     # Get action durations
     action_data = process_zoom_levels(
