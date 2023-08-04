@@ -140,6 +140,7 @@ def create_summary(*, metadata, data):
     summary = pd.concat(
         [pd.DataFrame(metadata, index=[0])] * (metadata['zoom_level'] + 1), ignore_index=True
     )
+    summary['chunk_size'] = summary['dataset'].apply(lambda x: int(x.split('MB')[0]))
     frames_data = data['frames_data']
     request_data = data['request_data']
     actions = data['action_data']
@@ -162,6 +163,7 @@ def create_summary(*, metadata, data):
                 requests['response_end'].max() - requests['request_start'].min()
             )
     summary['request_percent'] = summary['request_duration'] / summary['duration'] * 100
+
     return summary
 
 
