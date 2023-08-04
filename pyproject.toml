@@ -1,5 +1,43 @@
+[build-system]
+requires = [
+    "setuptools>=64",
+    "setuptools-scm[toml]>=6.2"
+]
+build-backend = "setuptools.build_meta"
 
 
+[project]
+name = "carbonplan_benchmarks"
+description = "CarbonPlan benchmarking utilities"
+readme = "README.md"
+license = {text = "Apache"}
+authors = [{name = "CarbonPlan", email = "tech@carbonplan.org"}]
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "pandas",
+    "fsspec",
+]
+dynamic = ["version"]
+
+[project.urls]
+repository = "https://github.com/carbonplan/benchmark-maps"
+
+[tool.setuptools.packages.find]
+include = ["carbonplan_benchmarks*"]
+
+[tool.setuptools_scm]
+local_scheme = "node-and-date"
+fallback_version = "999"
 
 [tool.black]
 line-length = 100

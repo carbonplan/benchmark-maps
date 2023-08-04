@@ -1,15 +1,13 @@
-import argparse
 import base64
 import json
 
 import cv2 as cv
 import fsspec
-import hvplot.pandas
 import numpy as np
 import pandas as pd
 import upath
-from parsing import extract_event_type, extract_frame_data, extract_request_data
-from plotting import plot_frames, plot_requests, plot_zoom_levels
+
+from .parsing import extract_event_type, extract_frame_data, extract_request_data
 
 pd.options.plotting.backend = 'holoviews'
 
@@ -135,25 +133,3 @@ def process_run(*, metadata_path: upath.UPath, run: int):
         'action_data': action_data,
     }
     return data
-
-
-# Parse command line arguments and run main function
-if __name__ == '__main__':
-    # Parse input args
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--timestamp', type=str)
-    parser.add_argument('--run', type=int, default=0)
-    parser.add_argument('--s3-bucket', type=str, default=None)
-    args = parser.parse_args()
-    if args.s3_bucket is not None:
-        metadata_fp = f'{args.s3_bucket}/benchmark-data/data-{args.timestamp}.json'
-    else:
-        metadata_fp = f'data/data-{args.timestamp}.json'
-    data = process_run(metadata_path=metadata_fp, run=args.run)
-    # # Create plots
-    requests_plt = plot_requests(data['request_data'])
-    frames_plt = plot_frames(data['frames_data'], yl=2.5)
-    zoom_plt_a = plot_zoom_levels(data['action_data'], yl=-1, yh=len(data['request_data']) + 1)
-    zoom_plt_b = plot_zoom_levels(data['action_data'])
-    # # Show plot using bokeh server
-    hvplot.show(((zoom_plt_a * requests_plt) + (zoom_plt_b * frames_plt)).cols(1))
