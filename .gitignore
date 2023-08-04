@@ -161,3 +161,4 @@ cython_debug/
 
 chrome-devtools-traces/
 playwright-screenshots/
+data/
