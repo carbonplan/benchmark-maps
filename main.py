@@ -28,13 +28,13 @@ def log_console_message(msg):
     print(f'Browser console: {msg}')
 
 
-async def mark_and_measure(*, page, start_mark: str, end_mark: str, label: str):
+async def mark_and_measure(*, page, start_mark: str, end_mark: str, label: str, timeout: int):
     # Define the JavaScript code to be executed
     javascript_code = f"""
         () => {{
             window._error = null;
             return new Promise((resolve, reject) => {{
-                const THRESHOLD = 5000;
+                const THRESHOLD = '{timeout}';
                 // timeout after THRESHOLD ms
                 setTimeout(() => {{
                     console.log(`'{label}': ${{THRESHOLD}} ms threshold timeout reached.`);
@@ -68,6 +68,7 @@ async def run(
     *,
     playwright,
     runs: int,
+    timeout: int,
     run_number: int,
     url: str,
     approach: str,
@@ -138,6 +139,7 @@ async def run(
         start_mark='benchmark-initial-load:start',
         end_mark='benchmark-initial-load:end',
         label='benchmark-initial-load',
+        timeout=timeout,
     )
 
     if zoom_level:
@@ -165,7 +167,9 @@ async def run(
                     page.keyboard.press('-'),
                 )
 
-            await mark_and_measure(page=page, start_mark=start_mark, end_mark=end_mark, label=label)
+            await mark_and_measure(
+                page=page, start_mark=start_mark, end_mark=end_mark, label=label, timeout=timeout
+            )
 
     # Stop tracing and save trace data
     trace_json = await browser.stop_tracing()
@@ -186,6 +190,7 @@ async def run(
         'zoom_level': zoom_level,
         'trace_path': str(json_path),
         'url': url,
+        'timeout': timeout,
     }
 
     all_data.append(data)
@@ -196,6 +201,7 @@ async def main(
     *,
     url: str,
     runs: int,
+    timeout: int,
     approach: str,
     dataset: str,
     zarr_version: str,
@@ -224,6 +230,7 @@ async def main(
                     dataset=dataset,
                     zarr_version=zarr_version,
                     runs=runs,
+                    timeout=timeout,
                     run_number=run_number + 1,
                     playwright_python_version=playwright_python_version,
                     provider_name=provider_name,
@@ -245,6 +252,7 @@ async def main(
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--runs', type=int, default=1, help='Number of runs to perform')
+    parser.add_argument('--timeout', type=int, default=5000, help='Timeout limit in milliseconds')
     parser.add_argument(
         '--detect-provider', action='store_true', help='Detect provider', default=False
     )
@@ -315,6 +323,7 @@ if __name__ == '__main__':
     asyncio.run(
         main(
             runs=args.runs,
+            timeout=args.timeout,
             approach=args.approach,
             dataset=args.dataset,
             zarr_version=args.zarr_version,
