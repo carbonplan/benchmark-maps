@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'binder/**.yml'
+      - 'binder/Dockerfile'
       - 'binder/apt.txt'
 
 concurrency:

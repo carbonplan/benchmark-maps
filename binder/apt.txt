@@ -16,3 +16,8 @@ libxdamage1
 libxfixes3
 libxkbcommon0
 libxrandr2
+xorg
+xserver-xorg
+xvfb
+libx11-dev
+libxext-dev
