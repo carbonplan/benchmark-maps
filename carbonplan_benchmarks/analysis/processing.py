@@ -71,7 +71,7 @@ def process_zoom_levels(*, trace_events, screenshot_data, zoom_level):
                 'startTime'
             ],
         },
-        index=['0'],
+        index=[0],
     )
     for ind in range(1, zoom_level + 1):
         action_data.loc[ind, 'start_time'] = markers[
@@ -80,6 +80,7 @@ def process_zoom_levels(*, trace_events, screenshot_data, zoom_level):
         action_data.loc[ind, 'end_time'] = screenshot_data.iloc[
             screenshot_data[f'rmse_snapshot_{ind}'].argmin()
         ]['startTime']
+    action_data['duration'] = action_data['end_time'] - action_data['start_time']
     return action_data
 
 
@@ -129,6 +130,39 @@ def load_snapshots(*, snapshot_path: str):
     with fs.open(snapshot_path) as f:
         snapshots = json.loads(f.read())
     return snapshots
+
+
+def create_summary(*, metadata, data):
+    """
+    Create summary DataFrame for a given run
+    """
+    metadata
+    summary = pd.concat(
+        [pd.DataFrame(metadata, index=[0])] * (metadata['zoom_level'] + 1), ignore_index=True
+    )
+    frames_data = data['frames_data']
+    request_data = data['request_data']
+    actions = data['action_data']
+    for zoom in range(metadata['zoom_level'] + 1):
+        frames = frames_data[
+            (frames_data['startTime'] > actions.loc[zoom, 'start_time'])
+            & (frames_data['startTime'] <= actions.loc[zoom, 'end_time'])
+        ]
+        requests = request_data[
+            (request_data['request_start'] > actions.loc[zoom, 'start_time'])
+            & (request_data['request_start'] <= actions.loc[zoom, 'end_time'])
+        ]
+        summary.loc[zoom, 'zoom'] = zoom
+        summary.loc[zoom, 'duration'] = actions.loc[zoom, 'duration']
+        summary.loc[zoom, 'fps'] = len(frames) / (actions.loc[zoom, 'duration'] * 1e-3)
+        if requests.empty:
+            summary.loc[zoom, 'request_duration'] = 0
+        else:
+            summary.loc[zoom, 'request_duration'] = (
+                requests['response_end'].max() - requests['request_start'].min()
+            )
+    summary['request_percent'] = summary['request_duration'] / summary['duration'] * 100
+    return summary
 
 
 def process_run(*, metadata, trace_events, snapshots):
