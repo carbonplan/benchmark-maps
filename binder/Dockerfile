@@ -19,5 +19,4 @@ RUN apt-get update && \
 # Install conda packages and clean up
 USER jovyan
 RUN mamba env update --prefix ${CONDA_DIR} --file /tmp/environment.yml && \
-    mamba clean --all -f -y && \
-    rm /tmp/environment.yml
+    mamba clean --all -f -y
