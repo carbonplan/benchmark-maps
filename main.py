@@ -75,6 +75,7 @@ async def run(
     dataset: str,
     zarr_version: str,
     playwright_python_version: str | None = None,
+    benchmark_version: str | None = None,
     provider_name: str | None = None,
     trace_dir: upath.UPath,
     action: str | None = None,
@@ -183,9 +184,13 @@ async def run(
     # Record system metrics
     data = {
         'playwright_python_version': playwright_python_version,
+        'benchmark_version': benchmark_version,
         'provider': provider_name,
         'browser_name': playwright.chromium.name,
         'browser_version': browser.version,
+        'approach': approach,
+        'zarr_version': zarr_version,
+        'dataset': dataset,
         'action': action,
         'zoom_level': zoom_level,
         'trace_path': str(json_path),
@@ -218,6 +223,9 @@ async def main(
         text=True,
     )
     playwright_python_version = playwright_python_version.stdout.split('\n')[1].split(': ')[1]
+    benchmark_version = (
+        subprocess.check_output(['git', 'describe', '--always', '--dirty']).decode('ascii').strip()
+    )
 
     # Run benchmark
     async with async_playwright() as playwright:
@@ -233,6 +241,7 @@ async def main(
                     timeout=timeout,
                     run_number=run_number + 1,
                     playwright_python_version=playwright_python_version,
+                    benchmark_version=benchmark_version,
                     provider_name=provider_name,
                     trace_dir=data_dir,
                     action=action,
