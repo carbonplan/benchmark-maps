@@ -204,5 +204,6 @@ def process_run(*, metadata, trace_events, snapshots):
         'request_data': filtered_request_data,
         'frames_data': filtered_frames_data,
         'action_data': action_data,
+        'screenshot_data': screenshot_data,
     }
     return data

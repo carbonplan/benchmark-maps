@@ -1,7 +1,10 @@
 # Utilities for plotting information from chromium trace records
 
 import holoviews as hv
+import hvplot.pandas  # noqa
 import pandas as pd
+
+pd.options.plotting.backend = 'holoviews'
 
 
 def plot_requests(request_data: pd.DataFrame):
@@ -59,3 +62,10 @@ def plot_zoom_levels(action_data: pd.DataFrame, *, yl: int = 0, yh: int = 6):
         axis=1,
     )
     return hv.Rectangles(action_data['rectangle'].to_list()).opts(color='darkgrey', alpha=0.3)
+
+
+def plot_screenshot_rmse(screenshot_data: pd.DataFrame, metadata: pd.DataFrame):
+    screenshot_data
+    y = [f'rmse_snapshot_{x}' for x in range(metadata['zoom_level'] + 1)]
+    plt = screenshot_data.hvplot(x='startTime', y=y)
+    return plt.opts(width=1000, xlabel='Time (ms)', ylabel='RMSE')
