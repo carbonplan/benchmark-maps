@@ -104,9 +104,6 @@ def load_data(*, metadata_path: str, run: int):
         fs = fsspec.filesystem('file')
     with fs.open(metadata_path) as f:
         metadata = json.loads(f.read())[run]
-    metadata['approach'] = metadata['url'].split('/')[-3]
-    metadata['zarr_version'] = metadata['url'].split('/')[-2]
-    metadata['dataset'] = metadata['url'].split('/')[-1]
     with fs.open(metadata['trace_path']) as f:
         trace_events = json.loads(f.read())['traceEvents']
     return metadata, trace_events
