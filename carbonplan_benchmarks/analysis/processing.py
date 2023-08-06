@@ -111,7 +111,11 @@ def load_data(*, metadata_path: str, run: int):
         fs = fsspec.filesystem('file')
     with fs.open(metadata_path) as f:
         metadata = json.loads(f.read())[run]
-    with fs.open(metadata['trace_path']) as f:
+    metadata['metadata_path'] = metadata_path
+    if not metadata['zoom_level']:
+        metadata['zoom_level'] = 0
+    trace_path = f'{"/".join(metadata_path.split("/")[:-1])}/{metadata["trace_path"]}'
+    with fs.open(trace_path) as f:
         trace_events = json.loads(f.read())['traceEvents']
     return metadata, trace_events
 

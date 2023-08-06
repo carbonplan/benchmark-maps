@@ -20,7 +20,7 @@ def plot_request_with_hover_tool(row):
         'request_start',
         'response_end',
     ]
-    for var in include_vars:
+    for var in include_vars[1:]:
         df[var] = row[var]
     df['url'] = df['url'].apply(lambda x: '/'.join(x.split('/')[10:]))
     lines = hv.Curve(df, 'time', include_vars)
