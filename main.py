@@ -107,13 +107,8 @@ async def run(
     print(
         f'🚀  Running benchmark for approach: {approach}, dataset: {dataset}, zarr_version: {zarr_version} on {url} 🚀'
     )
+    url = f'{url}/{approach}/{zarr_version}'
     await page.goto(url)
-
-    # select approach in radio input
-    await page.click(f'label:has(input[value="{approach}"])')
-
-    # select 'Zarr version' dropdown
-    await page.select_option('div:has-text("Zarr version") select', f'{zarr_version}')
 
     # Wait for the dropdown to be visible
     await page.wait_for_selector('text=Dataset')
@@ -178,6 +173,7 @@ async def run(
 
     trace_data = json.loads(trace_json)
     json_path = trace_dir / f'{now}-{run_number}.json'
+    print(f"[bold cyan]📊 Writing trace data to '{json_path}'[/bold cyan]")
     json_path.write_text(json.dumps(trace_data, indent=2))
     print(f"[bold cyan]📊 Trace data saved as '{json_path}'[/bold cyan]")
 
