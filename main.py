@@ -255,6 +255,7 @@ async def main(
     # Write the data to a json file
     data_path = data_dir / f'data-{now}.json'
     data_path.write_text(json.dumps(all_data, indent=2, sort_keys=True))
+    print(f"[bold cyan]📊 Run metadata saved as '{data_path}'[/bold cyan]")
 
 
 # Parse command line arguments and run main function
