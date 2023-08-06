@@ -193,7 +193,7 @@ async def run(
         'dataset': dataset,
         'action': action,
         'zoom_level': zoom_level,
-        'trace_path': str(json_path),
+        'trace_path': f'{now}-{run_number}.json',
         'url': url,
         'timeout': timeout,
     }
@@ -215,6 +215,7 @@ async def main(
     zoom_level: int | None = None,
     headless: bool,
     provider_name: str | None = None,
+    benchmark_version: str | None = None,
 ):
     # Get Playwright versions
     playwright_python_version = subprocess.run(
@@ -223,9 +224,6 @@ async def main(
         text=True,
     )
     playwright_python_version = playwright_python_version.stdout.split('\n')[1].split(': ')[1]
-    benchmark_version = (
-        subprocess.check_output(['git', 'describe', '--always', '--dirty']).decode('ascii').strip()
-    )
 
     # Run benchmark
     async with async_playwright() as playwright:
@@ -325,10 +323,17 @@ if __name__ == '__main__':
             f'Invalid zarr version: {args.zarr_version}. Must be one of: {ZARR_VERSIONS}'
         )
 
+    # Detect benchmark version
+    benchmark_version = (
+        subprocess.check_output(['git', 'describe', '--always', '--dirty']).decode('ascii').strip()
+    )
+
     # Define directories for data and screenshots
     root_dir = upath.UPath(__file__).parent
     data_dir = (
-        upath.UPath(args.s3_bucket) / 'benchmark-data' if args.s3_bucket else root_dir / 'data'
+        upath.UPath(args.s3_bucket) / 'benchmark-data' / benchmark_version
+        if args.s3_bucket
+        else root_dir / 'data' / benchmark_version
     )
     data_dir.mkdir(exist_ok=True, parents=True)
 
@@ -344,6 +349,7 @@ if __name__ == '__main__':
             zarr_version=args.zarr_version,
             url=BASE_URL,
             provider_name=provider_name,
+            benchmark_version=benchmark_version,
             data_dir=data_dir,
             action=args.action,
             zoom_level=args.zoom_level,
