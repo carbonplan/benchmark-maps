@@ -3,7 +3,7 @@ set -e
 
 
 playwright install
-datasets=("25MB-chunks")
+datasets=("1MB-chunks" "5MB-chunks" "10MB-chunks" "25MB-chunks")
 versions=("v2" "v3")
 
 for version in "${versions[@]}"
