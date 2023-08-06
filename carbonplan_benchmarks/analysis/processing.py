@@ -30,7 +30,7 @@ def base64_to_img(base64jpeg):
     return cv.imdecode(arr, cv.IMREAD_COLOR)
 
 
-def calculate_snapshot_rmse(*, trace_events, snapshots):
+def calculate_snapshot_rmse(*, trace_events, snapshots, metadata):
     """
     Extract screenshots from a list of Chromium trace events.
 
@@ -52,9 +52,9 @@ def calculate_snapshot_rmse(*, trace_events, snapshots):
         return np.sqrt(np.mean((predictions - targets) ** 2))
 
     screenshots = extract_event_type(trace_events=trace_events, event_name='Screenshot')
-    for action_ind, snapshot_base64 in enumerate(snapshots):
-        snapshot = base64_to_img(snapshot_base64)
-        var = f'rmse_snapshot_{action_ind}'
+    for zoom_level in range(metadata['zoom_level'] + 1):
+        snapshot = base64_to_img(snapshots[zoom_level])
+        var = f'rmse_snapshot_{zoom_level}'
         for ind, row in screenshots.iterrows():
             frame = base64_to_img(row['args.snapshot'])
             screenshots.loc[ind, var] = calculate_rmse(frame, snapshot)
@@ -63,11 +63,15 @@ def calculate_snapshot_rmse(*, trace_events, snapshots):
 
 def process_zoom_levels(*, trace_events, screenshot_data, zoom_level):
     markers = extract_event_type(trace_events=trace_events, event_name='benchmark-', exact=False)
-    hydrate = extract_event_type(trace_events=trace_events, event_name='afterHydrate')
     action_data = pd.DataFrame(
         {
-            'start_time': hydrate.iloc[0]['startTime'],
+            'start_time': markers[markers['name'] == 'benchmark-initial-load:start'].iloc[0][
+                'startTime'
+            ],
             'end_time': screenshot_data.iloc[screenshot_data['rmse_snapshot_0'].argmin()][
+                'startTime'
+            ],
+            'action_end_time': markers[markers['name'] == 'benchmark-initial-load:end'].iloc[0][
                 'startTime'
             ],
         },
@@ -80,6 +84,9 @@ def process_zoom_levels(*, trace_events, screenshot_data, zoom_level):
         action_data.loc[ind, 'end_time'] = screenshot_data.iloc[
             screenshot_data[f'rmse_snapshot_{ind}'].argmin()
         ]['startTime']
+        action_data.loc[ind, 'action_end_time'] = markers[
+            markers['name'] == f'benchmark-zoom_in-level-{ind-1}:end'
+        ].iloc[0]['startTime']
     action_data['duration'] = action_data['end_time'] - action_data['start_time']
     return action_data
 
@@ -148,8 +155,12 @@ def create_summary(*, metadata, data):
         ]
         requests = request_data[
             (request_data['request_start'] > actions.loc[zoom, 'start_time'])
-            & (request_data['request_start'] <= actions.loc[zoom, 'end_time'])
+            & (request_data['request_start'] <= actions.loc[zoom, 'action_end_time'])
         ]
+        if requests['request_start'].max() > actions.loc[zoom, 'action_end_time']:
+            raise Warning(f'Request for zoom level {zoom} started after timeout')
+        if requests['response_end'].max() > actions.loc[zoom, 'action_end_time']:
+            raise Warning(f'Response duration for zoom level {zoom} exceeded timeout')
         summary.loc[zoom, 'zoom'] = zoom
         summary.loc[zoom, 'duration'] = actions.loc[zoom, 'duration']
         summary.loc[zoom, 'fps'] = len(frames) / (actions.loc[zoom, 'duration'] * 1e-3)
@@ -190,7 +201,9 @@ def process_run(*, metadata, trace_events, snapshots):
     filtered_frames_data = extract_frame_data(trace_events=trace_events)
     # Extract screenshot data
     snapshots = snapshots[metadata['approach']][metadata['zarr_version']][metadata['dataset']]
-    screenshot_data = calculate_snapshot_rmse(trace_events=trace_events, snapshots=snapshots)
+    screenshot_data = calculate_snapshot_rmse(
+        trace_events=trace_events, snapshots=snapshots, metadata=metadata
+    )
     # Get action durations
     action_data = process_zoom_levels(
         trace_events=trace_events,
