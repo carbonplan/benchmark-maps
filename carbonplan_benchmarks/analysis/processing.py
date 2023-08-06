@@ -52,8 +52,9 @@ def calculate_snapshot_rmse(*, trace_events, snapshots, metadata):
         return np.sqrt(np.mean((predictions - targets) ** 2))
 
     screenshots = extract_event_type(trace_events=trace_events, event_name='Screenshot')
+    dataset = f"{metadata['approach']}-{metadata['zarr_version']}-{metadata['dataset']}"
     for zoom_level in range(metadata['zoom_level'] + 1):
-        snapshot = base64_to_img(snapshots[zoom_level])
+        snapshot = base64_to_img(snapshots.loc[dataset, str(zoom_level)])
         var = f'rmse_snapshot_{zoom_level}'
         for ind, row in screenshots.iterrows():
             frame = base64_to_img(row['args.snapshot'])
@@ -115,6 +116,7 @@ def load_data(*, metadata_path: str, run: int):
     if not metadata['zoom_level']:
         metadata['zoom_level'] = 0
     trace_path = f'{"/".join(metadata_path.split("/")[:-1])}/{metadata["trace_path"]}'
+    metadata['full_trace_path'] = trace_path
     with fs.open(trace_path) as f:
         trace_events = json.loads(f.read())['traceEvents']
     return metadata, trace_events
@@ -136,7 +138,7 @@ def load_snapshots(*, snapshot_path: str):
     else:
         fs = fsspec.filesystem('file')
     with fs.open(snapshot_path) as f:
-        snapshots = json.loads(f.read())
+        snapshots = pd.read_json(f, orient='index')
     return snapshots
 
 
@@ -204,7 +206,6 @@ def process_run(*, metadata, trace_events, snapshots):
     # Extract frame data
     filtered_frames_data = extract_frame_data(trace_events=trace_events)
     # Extract screenshot data
-    snapshots = snapshots[metadata['approach']][metadata['zarr_version']][metadata['dataset']]
     screenshot_data = calculate_snapshot_rmse(
         trace_events=trace_events, snapshots=snapshots, metadata=metadata
     )
