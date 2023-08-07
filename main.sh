@@ -2,13 +2,13 @@
 set -e
 
 playwright install
-versions=("v2")
+versions=("v3")
 action=""
-runs=100
+runs=50
 
 for version in "${versions[@]}"
 do
-  for chunk in 5 10 25
+  for chunk in 1 5 10 25
   do
     timeout=$((c=5000, chunk, y=2000, c+chunk*y))
     dataset="${chunk}MB-chunks"
