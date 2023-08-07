@@ -6,6 +6,7 @@ dependencies:
   - python=3.10
   - coiled
   - distributed
+  - git
   - hvplot
   - pandas
   - pip
@@ -18,4 +19,4 @@ dependencies:
   - pip:
       - pytest-playwright
       - cloud-detect
-      - opencv-python
+      - opencv-python-headless
