@@ -124,25 +124,6 @@ def extract_request_data(*, trace_events, url_filter: str = None):
     return data
 
 
-def combine_first_two_frames(df):
-    """
-    Combine the first two frames into one frame
-
-    Parameters
-    ----------
-
-    df: pd.DataFrame
-        DataFrame containing event information
-
-    Returns
-    -------
-    df : Processed DataFrame with first two frames combined
-    """
-    df.loc[1, 'startTime_Begin'] = df.loc[0, 'startTime_Draw']
-    df.loc[1, 'startTime_Begin_Diff'] = df.loc[2, 'startTime_Begin'] - df.loc[1, 'startTime_Begin']
-    return df.drop(df.head(1).index)
-
-
 def extract_frame_data(*, trace_events):
     """
     Extract frame data from a list of Chromium trace events.
@@ -191,7 +172,6 @@ def extract_frame_data(*, trace_events):
     )
     frame_events = frame_events.drop_duplicates(subset=['name_Begin', 'startTime_Begin'])
     frame_events['duration'] = -frame_events['startTime_Begin'].diff(periods=-1)
-    frame_events = combine_first_two_frames(frame_events)
     frame_events['endTime'] = frame_events['startTime_Begin'].shift(periods=-1)
     frame_events = frame_events.drop(frame_events.tail(1).index)
     frame_events = frame_events.rename({'startTime_Begin': 'startTime'}, axis=1)
