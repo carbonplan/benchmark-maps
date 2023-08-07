@@ -177,6 +177,7 @@ def create_summary(*, metadata, data):
                 requests['response_end'].max() - requests['request_start'].min()
             )
     summary['request_percent'] = summary['request_duration'] / summary['duration'] * 100
+    summary['non_request_duration'] = summary['duration'] - summary['request_duration']
 
     return summary
 
