@@ -4,7 +4,7 @@ import asyncio
 import upath
 from cloud_detect import provider
 
-from carbonplan_benchmarks.playwright.run import start
+from .run import start
 
 BASE_URL = 'https://prototype-maps.vercel.app'
 DATASETS_KEYS = ['pyramids-v3-sharded-4326-1MB', 'pyramids-v3-sharded-4326-5MB']
