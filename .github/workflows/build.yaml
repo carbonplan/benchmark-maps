@@ -1,11 +1,18 @@
 name: Build and push container image
 
 on:
-  pull_request:
+  push:
+    branches:
+      - main
     paths:
       - 'binder/**.yml'
       - 'binder/Dockerfile'
       - 'binder/apt.txt'
+  # pull_request:
+  #   paths:
+  #     - 'binder/**.yml'
+  #     - 'binder/Dockerfile'
+  #     - 'binder/apt.txt'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
