@@ -39,7 +39,8 @@ carbonplan_benchmarks = "carbonplan_benchmarks.playwright.cli:main"
 include = ["carbonplan_benchmarks*"]
 
 [tool.setuptools_scm]
-local_scheme = "node-and-date"
+local_scheme = "no-local-version"
+version_scheme = "no-guess-dev"
 fallback_version = "999"
 
 [tool.black]
