@@ -29,7 +29,7 @@ options:
   -h, --help            show this help message and exit
   --runs RUNS           Number of runs to perform
   --detect-provider     Detect provider
-  --approach APPROACH   Approach to use. Must be one of: ['direct-client']
+  --approach APPROACH   Approach to use. Must be one of: ['dynamic-client']
   --dataset DATASET     dataset name. Must be one of: ['1MB-chunks', '5MB-chunks', '10MB-chunks', '25MB-chunks']
   --zarr-version ZARR_VERSION
                         Zarr version. Must be one of: ['v2', 'v3']
