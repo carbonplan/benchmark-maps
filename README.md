@@ -17,22 +17,21 @@
 
 ## Running the benchmarks
 
-The repository contains a set of benchmarks that can be run locally or remotely using `coiled`. The benchmarks are run using the `main.py` script. The script takes the following arguments:
+The repository contains a set of benchmarks that can be run locally or remotely using `coiled`. The benchmarks are run using the `carbonplan_benchmarks` CLI. The CLI takes the following arguments:
 
 ```bash
-$ python main.py --help
-usage: main.py [-h] [--runs RUNS] [--detect-provider] [--approach APPROACH] [--dataset DATASET]
-               [--zarr-version ZARR_VERSION] [--non-headless] [--s3-bucket S3_BUCKET] [--action ACTION]
-               [--zoom-level ZOOM_LEVEL]
+$ carbonplan_benchmarks --help
+usage: carbonplan_benchmarks [-h] [--runs RUNS] [--timeout TIMEOUT] [--detect-provider] [--approach APPROACH] [--dataset DATASET] [--variable VARIABLE] [--non-headless]
+                             [--s3-bucket S3_BUCKET] [--action ACTION] [--zoom-level ZOOM_LEVEL]
 
 options:
   -h, --help            show this help message and exit
   --runs RUNS           Number of runs to perform
+  --timeout TIMEOUT     Timeout limit in milliseconds
   --detect-provider     Detect provider
-  --approach APPROACH   Approach to use. Must be one of: ['direct-client']
-  --dataset DATASET     dataset name. Must be one of: ['1MB-chunks', '5MB-chunks', '10MB-chunks', '25MB-chunks']
-  --zarr-version ZARR_VERSION
-                        Zarr version. Must be one of: ['v2', 'v3']
+  --approach APPROACH   Approach to use. Must be one of: ['dynamic-client']
+  --dataset DATASET     dataset name. Must be one of: ['pyramids-v3-sharded-4326-1MB', 'pyramids-v3-sharded-4326-5MB']
+  --variable VARIABLE   Zarr version. Must be one of: ['tasmax']
   --non-headless        Run in non-headless mode
   --s3-bucket S3_BUCKET
                         S3 bucket name
@@ -47,7 +46,7 @@ To run the benchmarks, you will need to install `playwright` and software packag
 
 ```bash
 # Create conda environment
-conda env update -f binder/environment.yml
+conda env create -f binder/environment.yml
 
 # Activate conda environment and install playwright browsers
 conda activate benchmark-maps
@@ -57,7 +56,7 @@ playwright install
 Once the environment is set up, you can run the benchmarks by running the following command:
 
 ```bash
-python main.py --dataset 1MB-chunks --zarr-version v2 --action zoom_in --zoom-level 4 --s3-bucket s3://carbonplan-benchmarks
+carbonplan_benchmarks --dataset pyramids-v3-sharded-4326-1MB --action zoom_in --zoom-level 4
 ```
 
 ### Remote via Coiled
@@ -65,7 +64,7 @@ python main.py --dataset 1MB-chunks --zarr-version v2 --action zoom_in --zoom-le
 To run the benchmark using `coiled`, you can run the following command:
 
 ```bash
-coiled run --gpu --container quay.io/carbonplan/benchmark-maps --file main.py bash main.sh
+coiled run --gpu --container quay.io/carbonplan/benchmark-maps bash main.sh
 ```
 
 ## license

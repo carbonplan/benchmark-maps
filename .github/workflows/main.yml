@@ -45,56 +45,11 @@ jobs:
             bash
           cache-environment: true
           post-cleanup: 'all'
-      - name: Install browsers
+      - name: Install browsers and package
         run: |
+          pip install -e . --no-deps
           playwright install
 
       - name: Run tests
         run: |
           pytest -v -s
-
-      - name: Run test benchmarks
-        if: github.event_name != 'workflow_dispatch'
-        run: |
-          python main.py \
-            --detect-provider \
-            --approach direct-client \
-            --dataset 5MB-chunks \
-            --zarr-version v2
-
-          python main.py \
-            --approach direct-client \
-            --dataset 10MB-chunks \
-            --zarr-version v3 \
-            --action zoom_in \
-            --zoom-level 1
-
-      - name: Run benchmarks using user inputs
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          python main.py \
-                --runs ${{ github.event.inputs.runs }} \
-                --detect-provider \
-                --approach direct-client \
-                --dataset 10MB-chunks \
-                --zarr-version v3 \
-                --action zoom_in \
-                --zoom-level 1
-
-      - name: Create Pull Request
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.upload-results == 'true'
-        uses: peter-evans/create-pull-request@v5
-        with:
-          commit-message: 'benchmark-results: update data'
-          committer: GitHub <noreply@github.com>
-          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
-          title: Update Benchmark Results
-          body: |
-            - Updates benchmark results with the latest data from runs triggered by: @${{ github.actor }}
-            - Configurations used:
-                - Number of runs: ${{ github.event.inputs.runs }}
-
-
-            [1]: https://github.com/peter-evans/create-pull-request
-          branch: update-data-${{ github.actor }}-${{ github.event.inputs.runs }}
-          delete-branch: true

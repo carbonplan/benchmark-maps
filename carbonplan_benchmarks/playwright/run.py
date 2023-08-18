@@ -1,20 +1,11 @@
-import argparse
 import asyncio
 import datetime
 import json
 import subprocess
 
 import upath
-from cloud_detect import provider
 from playwright.async_api import async_playwright
 from rich import print
-
-BASE_URL = 'https://prototype-maps.vercel.app'
-DATASETS_KEYS = ['1MB-chunks', '5MB-chunks', '10MB-chunks', '25MB-chunks']
-ZARR_VERSIONS = ['v2', 'v3']
-APPROACHES = ['direct-client']
-SUPPORTED_ACTIONS = ['zoom_in', 'zoom_out']
-
 
 # Get current timestamp
 now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H-%M-%S')
@@ -73,7 +64,7 @@ async def run(
     url: str,
     approach: str,
     dataset: str,
-    zarr_version: str,
+    variable: str,
     playwright_python_version: str | None = None,
     benchmark_version: str | None = None,
     provider_name: str | None = None,
@@ -104,20 +95,17 @@ async def run(
     print(f'[bold cyan]🚀 Starting benchmark run: {run_number}/{runs}...[/bold cyan]')
 
     # Go to URL
-    print(
-        f'🚀  Running benchmark for approach: {approach}, dataset: {dataset}, zarr_version: {zarr_version} on {url} 🚀'
-    )
-    url = f'{url}/{approach}/{zarr_version}'
-    await page.goto(url)
+    print(f'🚀  Running benchmark for approach: {approach}, dataset: {dataset} on {url} 🚀')
+    await page.goto(f'{url}/{approach}/{dataset}')
 
     # Wait for the dropdown to be visible
-    await page.wait_for_selector('text=Dataset')
+    await page.wait_for_selector('text=Variable')
 
     # Find the select element that is a child of the div containing the 'Dataset' text
-    dataset_dropdown = await page.query_selector(
-        'xpath=//div[text()="Dataset"]/following-sibling::div//select'
+    variable_dropdown = await page.query_selector(
+        'xpath=//div[text()="Variable"]/following-sibling::div//select'
     )
-    await dataset_dropdown.select_option(dataset)
+    await variable_dropdown.select_option(variable)
 
     await asyncio.gather(
         page.evaluate(
@@ -181,31 +169,33 @@ async def run(
     data = {
         'playwright_python_version': playwright_python_version,
         'benchmark_version': benchmark_version,
+        'run_number': run_number,
         'provider': provider_name,
         'browser_name': playwright.chromium.name,
         'browser_version': browser.version,
+        'url': url,
         'approach': approach,
-        'zarr_version': zarr_version,
         'dataset': dataset,
+        'variable': variable,
         'action': action,
         'zoom_level': zoom_level,
         'trace_path': f'{now}-{run_number}.json',
-        'url': url,
         'timeout': timeout,
+        'headless': headless,
     }
 
     all_data.append(data)
 
 
 # Define main function
-async def main(
+async def start(
     *,
     url: str,
     runs: int,
     timeout: int,
     approach: str,
     dataset: str,
-    zarr_version: str,
+    variable: str,
     data_dir: upath.UPath,
     action: str | None = None,
     zoom_level: int | None = None,
@@ -230,7 +220,7 @@ async def main(
                     url=url,
                     approach=approach,
                     dataset=dataset,
-                    zarr_version=zarr_version,
+                    variable=variable,
                     runs=runs,
                     timeout=timeout,
                     run_number=run_number + 1,
@@ -248,107 +238,5 @@ async def main(
 
     # Write the data to a json file
     data_path = data_dir / f'data-{now}.json'
+    print(data_path)
     data_path.write_text(json.dumps(all_data, indent=2, sort_keys=True))
-    print(f"[bold cyan]📊 Run metadata saved as '{data_path}'[/bold cyan]")
-
-
-# Parse command line arguments and run main function
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--runs', type=int, default=1, help='Number of runs to perform')
-    parser.add_argument('--timeout', type=int, default=5000, help='Timeout limit in milliseconds')
-    parser.add_argument(
-        '--detect-provider', action='store_true', help='Detect provider', default=False
-    )
-    parser.add_argument(
-        '--approach',
-        type=str,
-        default='direct-client',
-        help=f'Approach to use. Must be one of: {APPROACHES}',
-    )
-    parser.add_argument(
-        '--dataset',
-        type=str,
-        default=None,
-        help=f'dataset name. Must be one of: {DATASETS_KEYS}',
-    )
-    parser.add_argument(
-        '--zarr-version',
-        type=str,
-        default=None,
-        help=f'Zarr version. Must be one of: {ZARR_VERSIONS}',
-    )
-    parser.add_argument('--non-headless', action='store_true', help='Run in non-headless mode')
-    parser.add_argument('--s3-bucket', type=str, default=None, help='S3 bucket name')
-    parser.add_argument(
-        '--action',
-        type=str,
-        default=None,
-        help=f'Action to perform. Must be one of: {SUPPORTED_ACTIONS}',
-    )
-    parser.add_argument('--zoom-level', type=int, default=None, help='Zoom level')
-
-    args = parser.parse_args()
-
-    # Validate arguments
-    if args.action and args.action not in SUPPORTED_ACTIONS:
-        raise ValueError(
-            f'Invalid action: {args.action}. Supported operations are: {SUPPORTED_ACTIONS}'
-        )
-
-    if args.action and args.action.startswith('zoom') and args.zoom_level is None:
-        raise ValueError(
-            f'Invalid zoom level: {args.zoom_level}. Must be an integer greater than 0.'
-        )
-
-    if args.zoom_level and args.action is None:
-        raise ValueError(
-            f'Invalid zoom level: {args.zoom_level}. --action must be set if zoom-level is greater than 0.'
-        )
-    # Validate approach argument
-    if args.approach not in APPROACHES:
-        raise ValueError(f'Invalid approach: {args.approach}. Must be one of: {APPROACHES}')
-
-    # Validate dataset argument
-    if args.dataset not in DATASETS_KEYS:
-        raise ValueError(f'Invalid dataset: {args.dataset}. Must be one of: {DATASETS_KEYS}')
-
-    # Validate zarr version argument
-    if args.zarr_version not in ZARR_VERSIONS:
-        raise ValueError(
-            f'Invalid zarr version: {args.zarr_version}. Must be one of: {ZARR_VERSIONS}'
-        )
-
-    # Detect benchmark version
-    benchmark_version = (
-        subprocess.check_output(['git', 'describe', '--always', '--dirty']).decode('ascii').strip()
-    )
-
-    # Define directories for data and screenshots
-    root_dir = upath.UPath(__file__).parent
-    data_dir = (
-        upath.UPath(args.s3_bucket) / 'benchmark-data' / benchmark_version
-        if args.s3_bucket
-        else root_dir / 'data' / benchmark_version
-    )
-    data_dir.mkdir(exist_ok=True, parents=True)
-
-    # Detect cloud provider
-    provider_name = provider() if args.detect_provider else 'unknown'
-
-    asyncio.run(
-        main(
-            runs=args.runs,
-            timeout=args.timeout,
-            approach=args.approach,
-            dataset=args.dataset,
-            zarr_version=args.zarr_version,
-            url=BASE_URL,
-            provider_name=provider_name,
-            benchmark_version=benchmark_version,
-            data_dir=data_dir,
-            action=args.action,
-            zoom_level=args.zoom_level,
-            headless=not args.non_headless,
-        )
-    )
