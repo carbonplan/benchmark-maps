@@ -66,6 +66,7 @@ async def run(
     dataset: str,
     variable: str,
     playwright_python_version: str | None = None,
+    benchmark_version: str | None = None,
     provider_name: str | None = None,
     trace_dir: upath.UPath,
     action: str | None = None,
@@ -166,14 +167,20 @@ async def run(
     # Record system metrics
     data = {
         'playwright_python_version': playwright_python_version,
+        'benchmark_version': benchmark_version,
+        'run_number': run_number,
         'provider': provider_name,
         'browser_name': playwright.chromium.name,
         'browser_version': browser.version,
+        'url': url,
+        'approach': approach,
+        'dataset': dataset,
+        'variable': variable,
         'action': action,
         'zoom_level': zoom_level,
-        'trace_path': str(json_path),
-        'url': url,
+        'trace_path': f'{now}-{run_number}.json',
         'timeout': timeout,
+        'headless': headless,
     }
 
     all_data.append(data)
@@ -193,6 +200,7 @@ async def start(
     zoom_level: int | None = None,
     headless: bool,
     provider_name: str | None = None,
+    benchmark_version: str | None = None,
 ):
     # Get Playwright versions
     playwright_python_version = subprocess.run(
@@ -216,6 +224,7 @@ async def start(
                     timeout=timeout,
                     run_number=run_number + 1,
                     playwright_python_version=playwright_python_version,
+                    benchmark_version=benchmark_version,
                     provider_name=provider_name,
                     trace_dir=data_dir,
                     action=action,
@@ -228,4 +237,5 @@ async def start(
 
     # Write the data to a json file
     data_path = data_dir / f'data-{now}.json'
+    print(data_path)
     data_path.write_text(json.dumps(all_data, indent=2, sort_keys=True))

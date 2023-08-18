@@ -4,6 +4,7 @@ import asyncio
 import upath
 from cloud_detect import provider
 
+from .. import __version__
 from .run import start
 
 BASE_URL = 'https://prototype-maps.vercel.app'
@@ -79,9 +80,12 @@ def main():
         raise ValueError(f'Invalid zarr version: {args.variable}. Must be one of: {VARIABLES}')
 
     # Define directories for data and screenshots
-    root_dir = upath.UPath(__file__).parent
+    benchmark_version = '.'.join(__version__.split('.')[0:2])
+
     data_dir = (
-        upath.UPath(args.s3_bucket) / 'benchmark-data' if args.s3_bucket else root_dir / 'data'
+        upath.UPath(args.s3_bucket) / 'benchmark-data' / benchmark_version
+        if args.s3_bucket
+        else upath.UPath('data') / benchmark_version
     )
     data_dir.mkdir(exist_ok=True, parents=True)
 
@@ -101,6 +105,7 @@ def main():
             action=args.action,
             zoom_level=args.zoom_level,
             headless=not args.non_headless,
+            benchmark_version=benchmark_version,
         )
     )
 
