@@ -19,3 +19,4 @@ dependencies:
       - pytest-playwright
       - cloud-detect
       - opencv-python
+      - git+https://github.com/carbonplan/benchmark-maps

@@ -32,6 +32,9 @@ dynamic = ["version"]
 [project.urls]
 repository = "https://github.com/carbonplan/benchmark-maps"
 
+[project.scripts]
+carbonplan_benchmarks = "carbonplan_benchmarks.playwright.cli:main"
+
 [tool.setuptools.packages.find]
 include = ["carbonplan_benchmarks*"]
 
