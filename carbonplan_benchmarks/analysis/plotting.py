@@ -37,7 +37,7 @@ def plot_request_with_hover_tool(row):
     return lines
 
 
-def plot_requests(request_data: pd.DataFrame):
+def plot_requests(request_data: pd.DataFrame, url_filter: str = None):
     """
     Plot rectangles showing each request duration
     """
@@ -50,6 +50,8 @@ def plot_requests(request_data: pd.DataFrame):
         ),
         axis=1,
     )
+    if url_filter:
+        request_data = request_data[request_data.url.str.contains(url_filter)]
     plt = hv.Rectangles(request_data['rectangle'].to_list())
     plt.opts(width=1000, color='lightgrey', xlabel='Time (ms)', yaxis=None, title='Network')
     for row in request_data.iterrows():

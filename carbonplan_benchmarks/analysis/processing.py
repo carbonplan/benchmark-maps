@@ -142,7 +142,7 @@ def load_snapshots(*, snapshot_path: str):
     return snapshots
 
 
-def create_summary(*, metadata, data):
+def create_summary(*, metadata: pd.DataFrame, data: dict, url_filter: str = None):
     """
     Create summary DataFrame for a given run
     """
@@ -153,6 +153,7 @@ def create_summary(*, metadata, data):
     summary['chunk_size'] = summary['dataset'].apply(lambda x: int(x.split('MB')[0]))
     frames_data = data['frames_data']
     request_data = data['request_data']
+
     actions = data['action_data']
     for zoom in range(metadata['zoom_level'] + 1):
         frames = frames_data[
@@ -163,6 +164,10 @@ def create_summary(*, metadata, data):
             (request_data['request_start'] > actions.loc[zoom, 'start_time'])
             & (request_data['request_start'] <= actions.loc[zoom, 'action_end_time'])
         ]
+        summary['total_requests'] = len(requests)
+        if url_filter:
+            requests = requests[requests['url'].str.contains(url_filter)]
+        summary['filtered_requests'] = len(requests)
         if requests['request_start'].max() > actions.loc[zoom, 'action_end_time']:
             raise Warning(f'Request for zoom level {zoom} started after timeout')
         if requests['response_end'].max() > actions.loc[zoom, 'action_end_time']:
@@ -182,7 +187,7 @@ def create_summary(*, metadata, data):
     return summary
 
 
-def process_run(*, metadata, trace_events, snapshots):
+def process_run(*, metadata, trace_events, snapshots, url_filter=None):
     """
     Process the results from a benchmarking run.
 
@@ -196,14 +201,16 @@ def process_run(*, metadata, trace_events, snapshots):
         The list of trace events.
 
     snapshots: list
-        List of snapshots to compare screenshots against
+        List of snapshots to compare screenshots against.
+
+    url_filter: str
+        Filter requests based on this url.
     Returns
     -------
     data : Dict containing request_data, frames_data, and action_data for the run.
     """
     # Extract request data
-    url_filter = 'carbonplan-benchmarks.s3.us-west-2.amazonaws.com/data/'
-    filtered_request_data = extract_request_data(trace_events=trace_events, url_filter=url_filter)
+    filtered_request_data = extract_request_data(trace_events=trace_events)
     # Extract frame data
     filtered_frames_data = extract_frame_data(trace_events=trace_events)
     # Extract screenshot data
