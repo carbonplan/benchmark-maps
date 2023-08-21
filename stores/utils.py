@@ -2,6 +2,69 @@ import rioxarray  # noqa
 import xarray as xr
 from carbonplan_data.utils import set_zarr_encoding as set_web_zarr_encoding
 from ndpyramid import pyramid_reproject
+import numpy as np
+
+
+def calc_shard_size(arr: np.ndarray, *, chunks: tuple, target_mb: int, orientation: str) -> tuple:
+    """Calculate shard sizes for uncompressed shards to match target size.
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        Dataset that will be sharded.
+    target_mb : int
+        Target shard size in MB.
+    chunks : tuple
+        Chunk size for 'time, 'x', and 'y' dims.
+    orientation: str
+        Whether chunks should be grouped into shards primarily in space, time, or both.
+
+    Returns
+    -------
+    target_shards : tuple
+    """
+    chunk_size = arr[: chunks[0], : chunks[1], : chunks[2]].nbytes * 1e-6
+    if orientation == 'space':
+        time_shard = chunks[0]
+        x_shard = y_shard = chunks[1]
+        shard_size = arr[:time_shard, :x_shard, :y_shard].nbytes * 1e-6
+        while (shard_size <= (target_mb - chunk_size)) and (x_shard <= (arr.shape[1] - chunks[1])):
+            x_shard += chunks[1]
+            shard_size = arr[:time_shard, :x_shard, :y_shard].nbytes * 1e-6
+        while (shard_size * 1e-6 <= (target_mb - shard_size)) and (
+            y_shard <= (arr.shape[1] - chunks[1])
+        ):
+            y_shard += chunks[1]
+            shard_size = arr[:time_shard, :x_shard, :y_shard].nbytes * 1e-6
+    elif orientation == 'time':
+        x_shard = y_shard = chunks[1]
+        time_shard = chunks[0]
+        shard_size = arr[:time_shard, :x_shard, :y_shard].nbytes * 1e-6
+        while (shard_size <= (target_mb - chunk_size)) and (
+            time_shard <= (arr.shape[0] - chunks[0])
+        ):
+            time_shard += chunks[0]
+            shard_size = arr[:time_shard, :x_shard, :y_shard].nbytes * 1e-6
+    elif orientation == 'both':
+        x_shard = y_shard = chunks[1]
+        time_shard = chunks[0]
+        shard_size = arr[:time_shard, :x_shard, :y_shard].nbytes * 1e-6
+        while (shard_size <= (target_mb - chunk_size)) and (x_shard <= (arr.shape[1] - chunks[1])):
+            x_shard += chunks[1]
+            shard_size = arr[:time_shard, :x_shard, :y_shard].nbytes * 1e-6
+        while (shard_size * 1e-6 <= (target_mb - shard_size)) and (
+            y_shard <= (arr.shape[1] - chunks[1])
+        ):
+            y_shard += chunks[1]
+            shard_size = arr[:time_shard, :x_shard, :y_shard].nbytes * 1e-6
+        while (shard_size <= (target_mb - shard_size)) and (
+            time_shard <= (arr.shape[0] - chunks[0])
+        ):
+            time_shard += chunks[0]
+            shard_size = arr[:time_shard, :x_shard, :y_shard].nbytes * 1e-6
+    else:
+        raise ValueError("Orientation must be either 'space' or 'time'")
+    return (time_shard, x_shard, y_shard)
 
 
 def calc_chunk_dict(ds: xr.Dataset, target_mb: int, pixels_per_tile: int) -> dict:
@@ -45,6 +108,7 @@ def pyramid(
     pixels_per_tile: int = 128,
     target_mb: int = 5,
     projection: str = 'web-mercator',
+    extra_attrs: dict = None,
 ) -> str:
     '''Create a data pyramid from an xarray Dataset
 
@@ -62,10 +126,16 @@ def pyramid(
         Number of pixels along x and y per tile, by default 128
     target_mb : int, optional
         Target size in MB for each chunk; used to define chunking along time dimension, by default 5 MB
+    projection : str
+        Projection for pyramids
+    extra_attrs: dict
+        Extra attrs to include in metadata
+
 
     Returns
     -------
     target : str
+        URI for Zarr store containing pyramids
     '''
 
     ds = xr.open_zarr(ds_path, chunks={}).rio.write_crs('EPSG:4326')
@@ -96,6 +166,11 @@ def pyramid(
         for var in ['time', 'time_bnds']:
             if var in dta[child].ds:
                 dta[child].ds[var].encoding['dtype'] = 'int32'
+
+    extra_attrs['target_mb'] = target_mb
+    extra_attrs['projection'] = projection
+    extra_attrs['pixels_per_tile'] = pixels_per_tile
+    dta.attrs['config'] = extra_attrs
 
     # write to zarr
     print(f'writing to {target}...')
