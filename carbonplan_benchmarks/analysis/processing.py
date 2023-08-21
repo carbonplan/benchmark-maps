@@ -149,6 +149,7 @@ def create_summary(*, metadata: pd.DataFrame, data: dict, url_filter: str = None
     summary = pd.concat(
         [pd.DataFrame(metadata, index=[0])] * (metadata['zoom_level'] + 1), ignore_index=True
     )
+    summary['zarr_version'] = summary['dataset'].apply(lambda x: int(x.split('-')[1][1]))
     summary['chunk_size'] = summary['dataset'].apply(lambda x: int(x.split('-')[5]))
     frames_data = data['frames_data']
     request_data = data['request_data']
