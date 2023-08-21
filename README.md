@@ -56,7 +56,7 @@ playwright install
 Once the environment is set up, you can run the benchmarks by running the following command:
 
 ```bash
-carbonplan_benchmarks --dataset pyramids-v3-sharded-4326-1MB --action zoom_in --zoom-level 4
+carbonplan_benchmarks --dataset pyramids-v2-3857-True-128-1-0-0-f4-0-0-0-gzipL1-100 --action zoom_in --zoom-level 4
 ```
 
 ### Remote via Coiled
