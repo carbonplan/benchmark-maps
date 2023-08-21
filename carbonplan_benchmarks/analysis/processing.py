@@ -52,9 +52,8 @@ def calculate_snapshot_rmse(*, trace_events, snapshots, metadata):
         return np.sqrt(np.mean((predictions - targets) ** 2))
 
     screenshots = extract_event_type(trace_events=trace_events, event_name='Screenshot')
-    dataset = f"{metadata['approach']}-{metadata['zarr_version']}-{metadata['dataset']}"
     for zoom_level in range(metadata['zoom_level'] + 1):
-        snapshot = base64_to_img(snapshots.loc[dataset, str(zoom_level)])
+        snapshot = base64_to_img(snapshots.loc[zoom_level, 0])
         var = f'rmse_snapshot_{zoom_level}'
         for ind, row in screenshots.iterrows():
             frame = base64_to_img(row['args.snapshot'])
@@ -150,7 +149,7 @@ def create_summary(*, metadata: pd.DataFrame, data: dict, url_filter: str = None
     summary = pd.concat(
         [pd.DataFrame(metadata, index=[0])] * (metadata['zoom_level'] + 1), ignore_index=True
     )
-    summary['chunk_size'] = summary['dataset'].apply(lambda x: int(x.split('MB')[0]))
+    summary['chunk_size'] = summary['dataset'].apply(lambda x: int(x.split('-')[5]))
     frames_data = data['frames_data']
     request_data = data['request_data']
 
