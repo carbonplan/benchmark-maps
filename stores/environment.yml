@@ -17,13 +17,13 @@ dependencies:
   - pangeo-forge-recipes=0.10.0
   - pre-commit
   - s3fs>=2023.4.0
-  - xarray
   - rasterio
   - rioxarray>=0.13.1
   - numpy
+  - xarray
   - xesmf=0.7.1
   - pip:
-      - git+https://github.com/carbonplan/ndpyramid.git@d13cf6cb73d9ced181ea6e88f883ce6964e9a375
+      - git+https://github.com/carbonplan/ndpyramid.git@5aee19162408a7946960b9290a4568230517b21c
       - git+https://github.com/scalableminds/zarrita.git@b88ae5ca02917e24e716855f15ffaf020b95bb1a
       - git+https://github.com/carbonplan/data.git
       - 'apache-beam[aws,interactive,dataframe]'
