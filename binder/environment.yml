@@ -10,6 +10,7 @@ dependencies:
   - hvplot
   - pandas
   - pip
+  - jupyter
   - pytest
   - requests
   - rich
