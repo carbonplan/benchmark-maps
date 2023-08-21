@@ -6,9 +6,11 @@ dependencies:
   - python=3.10
   - coiled
   - distributed
+  - git
   - hvplot
   - pandas
   - pip
+  - jupyter
   - pytest
   - requests
   - rich
@@ -18,5 +20,5 @@ dependencies:
   - pip:
       - pytest-playwright
       - cloud-detect
-      - opencv-python
+      - opencv-python-headless
       - git+https://github.com/carbonplan/benchmark-maps

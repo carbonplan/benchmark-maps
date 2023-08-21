@@ -161,6 +161,7 @@ async def run(
 
     trace_data = json.loads(trace_json)
     json_path = trace_dir / f'{now}-{run_number}.json'
+    print(f"[bold cyan]📊 Writing trace data to '{json_path}'[/bold cyan]")
     json_path.write_text(json.dumps(trace_data, indent=2))
     print(f"[bold cyan]📊 Trace data saved as '{json_path}'[/bold cyan]")
 
