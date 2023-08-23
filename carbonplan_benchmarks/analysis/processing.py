@@ -9,6 +9,7 @@ import pandas as pd
 from .parsing import extract_event_type, extract_frame_data, extract_request_data
 
 pd.options.plotting.backend = 'holoviews'
+pd.options.mode.chained_assignment = None
 
 
 def base64_to_img(base64jpeg):
@@ -30,7 +31,7 @@ def base64_to_img(base64jpeg):
     return cv.imdecode(arr, cv.IMREAD_COLOR)
 
 
-def calculate_snapshot_rmse(*, trace_events, snapshots, metadata):
+def calculate_snapshot_rmse(*, trace_events, snapshots, metadata, xstart: int = 133):
     """
     Extract screenshots from a list of Chromium trace events.
 
@@ -57,7 +58,7 @@ def calculate_snapshot_rmse(*, trace_events, snapshots, metadata):
         var = f'rmse_snapshot_{zoom_level}'
         for ind, row in screenshots.iterrows():
             frame = base64_to_img(row['args.snapshot'])
-            screenshots.loc[ind, var] = calculate_rmse(frame, snapshot)
+            screenshots.loc[ind, var] = calculate_rmse(frame[:, xstart:], snapshot[:, xstart:])
     return screenshots
 
 
@@ -118,6 +119,28 @@ def load_data(*, metadata_path: str, run: int):
     metadata['full_trace_path'] = trace_path
     with fs.open(trace_path) as f:
         trace_events = json.loads(f.read())['traceEvents']
+    event_types = [
+        'ResourceSendRequest',
+        'ResourceFinish',
+        'BeginFrame',
+        'DrawFrame',
+        'DroppedFrame',
+        'Commit',
+        'Screenshot',
+        'benchmark-initial-load:start',
+        'benchmark-initial-load:end',
+        'benchmark-zoom_in-level-0:start'
+        'benchmark-zoom_in-level-1:start'
+        'benchmark-zoom_in-level-2:start'
+        'benchmark-zoom_in-level-0:end'
+        'benchmark-zoom_in-level-1:end'
+        'benchmark-zoom_in-level-2:end',
+    ]
+    trace_events = [
+        event
+        for event in trace_events
+        if event['name'] in event_types or 'benchmark-zoom' in event['name']
+    ]
     return metadata, trace_events
 
 
@@ -145,12 +168,17 @@ def create_summary(*, metadata: pd.DataFrame, data: dict, url_filter: str = None
     """
     Create summary DataFrame for a given run
     """
-    metadata
     summary = pd.concat(
         [pd.DataFrame(metadata, index=[0])] * (metadata['zoom_level'] + 1), ignore_index=True
     )
+    summary['metadata_path'] = metadata['metadata_path']
+    summary['trace_path'] = metadata['trace_path']
     summary['zarr_version'] = summary['dataset'].apply(lambda x: int(x.split('-')[1][1]))
+    summary['projection'] = summary['dataset'].apply(lambda x: int(x.split('-')[2]))
+    summary['pixels_per_tile'] = summary['dataset'].apply(lambda x: int(x.split('-')[4]))
     summary['chunk_size'] = summary['dataset'].apply(lambda x: int(x.split('-')[5]))
+    summary['shard_orientation'] = summary['dataset'].apply(lambda x: x.split('-')[6])
+    summary['shard_size'] = summary['dataset'].apply(lambda x: int(x.split('-')[7]))
     frames_data = data['frames_data']
     request_data = data['request_data']
 
@@ -164,16 +192,30 @@ def create_summary(*, metadata: pd.DataFrame, data: dict, url_filter: str = None
             (request_data['request_start'] > actions.loc[zoom, 'start_time'])
             & (request_data['request_start'] <= actions.loc[zoom, 'action_end_time'])
         ]
-        summary['total_requests'] = len(requests)
+        summary.loc[zoom, 'total_requests'] = len(requests)
         if url_filter:
             requests = requests[requests['url'].str.contains(url_filter)]
-        summary['filtered_requests'] = len(requests)
-        if requests['request_start'].max() > actions.loc[zoom, 'action_end_time']:
-            raise Warning(f'Request for zoom level {zoom} started after timeout')
-        if requests['response_end'].max() > actions.loc[zoom, 'action_end_time']:
-            raise Warning(f'Response duration for zoom level {zoom} exceeded timeout')
+        summary.loc[zoom, 'filtered_requests'] = len(requests)
+        summary.loc[zoom, 'filtered_requests_average_encoded_data_length'] = requests[
+            'encoded_data_length'
+        ].mean()
+        summary.loc[zoom, 'filtered_requests_maximum_encoded_data_length'] = requests[
+            'encoded_data_length'
+        ].max()
         summary.loc[zoom, 'zoom'] = zoom
         summary.loc[zoom, 'duration'] = actions.loc[zoom, 'duration']
+        summary.loc[zoom, 'timeout'] = False
+        if requests['request_start'].max() > actions.loc[zoom, 'action_end_time']:
+            actions.loc[zoom, 'action_end_time'] = np.nan
+            summary.loc[zoom, 'duration'] = metadata['timeout']
+            summary.loc[zoom, 'timeout'] = True
+        if requests['response_end'].max() > actions.loc[zoom, 'action_end_time']:
+            actions.loc[zoom, 'action_end_time'] = np.nan
+            summary.loc[zoom, 'duration'] = metadata['timeout']
+            summary.loc[zoom, 'timeout'] = True
+        if summary.loc[zoom, 'duration'] > metadata['timeout']:
+            summary.loc[zoom, 'duration'] = metadata['timeout']
+            summary.loc[zoom, 'timeout'] = True
         summary.loc[zoom, 'fps'] = len(frames) / (actions.loc[zoom, 'duration'] * 1e-3)
         if requests.empty:
             summary.loc[zoom, 'request_duration'] = 0
