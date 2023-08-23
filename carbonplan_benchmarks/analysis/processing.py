@@ -5,6 +5,7 @@ import cv2 as cv
 import fsspec
 import numpy as np
 import pandas as pd
+import zarrita
 
 from .parsing import extract_event_type, extract_frame_data, extract_request_data
 
@@ -164,6 +165,45 @@ def load_snapshots(*, snapshot_path: str):
     return snapshots
 
 
+def get_chunk_size(URI, zarr_version, sharded, var='tasmax'):
+    """
+    Get chunk size based on zoom level 0.
+    """
+    source_store = zarrita.RemoteStore(URI)
+    if zarr_version == 2:
+        source_array = zarrita.ArrayV2.open(source_store / '0' / var)
+        chunks = source_array.metadata.chunks
+        itemsize = source_array.metadata.dtype.itemsize
+    else:
+        source_array = zarrita.Array.open(source_store / '0' / var)
+        if sharded:
+            chunks = source_array.metadata.codecs[0].configuration.chunk_shape
+        else:
+            chunks = source_array.metadata.chunk_grid.configuration.chunk_shape
+        itemsize = source_array.metadata.dtype.itemsize
+    chunk_size = np.prod(chunks) * itemsize * 1e-6
+    return chunk_size
+
+
+def add_chunk_size(
+    summary: pd.DataFrame,
+    *,
+    root_path: str = 's3://carbonplan-benchmarks/data/NEX-GDDP-CMIP6/ACCESS-CM2/historical/r1i1p1f1/tasmax/tasmax_day_ACCESS-CM2_historical_r1i1p1f1_gn',
+):
+    """
+    Add a column to the summary DataFrame containing the chunk size.
+    """
+    datasets = summary[
+        ['zarr_version', 'dataset', 'shard_size', 'target_chunk_size']
+    ].drop_duplicates()
+    datasets['URI'] = root_path + '/' + datasets['dataset']
+    datasets['actual_chunk_size'] = datasets.apply(
+        lambda x: get_chunk_size(x['URI'], x['zarr_version'], x['shard_size']), axis=1
+    )
+    datasets = datasets[['dataset', 'actual_chunk_size']]
+    return summary.set_index('dataset').join(datasets.set_index('dataset'))
+
+
 def create_summary(*, metadata: pd.DataFrame, data: dict, url_filter: str = None):
     """
     Create summary DataFrame for a given run
@@ -176,7 +216,7 @@ def create_summary(*, metadata: pd.DataFrame, data: dict, url_filter: str = None
     summary['zarr_version'] = summary['dataset'].apply(lambda x: int(x.split('-')[1][1]))
     summary['projection'] = summary['dataset'].apply(lambda x: int(x.split('-')[2]))
     summary['pixels_per_tile'] = summary['dataset'].apply(lambda x: int(x.split('-')[4]))
-    summary['chunk_size'] = summary['dataset'].apply(lambda x: int(x.split('-')[5]))
+    summary['target_chunk_size'] = summary['dataset'].apply(lambda x: int(x.split('-')[5]))
     summary['shard_orientation'] = summary['dataset'].apply(lambda x: x.split('-')[6])
     summary['shard_size'] = summary['dataset'].apply(lambda x: int(x.split('-')[7]))
     frames_data = data['frames_data']
@@ -225,6 +265,7 @@ def create_summary(*, metadata: pd.DataFrame, data: dict, url_filter: str = None
             )
     summary['request_percent'] = summary['request_duration'] / summary['duration'] * 100
     summary['non_request_duration'] = summary['duration'] - summary['request_duration']
+    summary = add_chunk_size(summary)
 
     return summary
 
