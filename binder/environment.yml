@@ -22,3 +22,4 @@ dependencies:
       - cloud-detect
       - opencv-python-headless
       - git+https://github.com/carbonplan/benchmark-maps
+      - git+https://github.com/scalableminds/zarrita.git@b88ae5ca02917e24e716855f15ffaf020b95bb1a

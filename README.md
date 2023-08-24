@@ -30,7 +30,7 @@ options:
   --timeout TIMEOUT     Timeout limit in milliseconds
   --detect-provider     Detect provider
   --approach APPROACH   Approach to use. Must be one of: ['dynamic-client']
-  --dataset DATASET     dataset name. Must be one of: ['pyramids-v3-sharded-4326-1MB', 'pyramids-v3-sharded-4326-5MB']
+  --dataset DATASET     dataset name.
   --variable VARIABLE   Zarr version. Must be one of: ['tasmax']
   --non-headless        Run in non-headless mode
   --s3-bucket S3_BUCKET
