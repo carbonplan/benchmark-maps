@@ -55,7 +55,11 @@ def calculate_snapshot_rmse(*, trace_events, snapshots, metadata, xstart: int = 
 
     screenshots = extract_event_type(trace_events=trace_events, event_name='Screenshot')
     for zoom_level in range(metadata['zoom_level'] + 1):
-        snapshot = base64_to_img(snapshots.loc[zoom_level, 0])
+        snapshot = base64_to_img(
+            snapshots[str(metadata['zarr_version'])][str(metadata['pixels_per_tile'])][
+                str(metadata['projection'])
+            ][str(zoom_level)]
+        )
         var = f'rmse_snapshot_{zoom_level}'
         for ind, row in screenshots.iterrows():
             frame = base64_to_img(row['args.snapshot'])
@@ -76,6 +80,9 @@ def process_zoom_levels(*, trace_events, screenshot_data, zoom_level):
             'action_end_time': markers[markers['name'] == 'benchmark-initial-load:end'].iloc[0][
                 'startTime'
             ],
+            'min_rmse': screenshot_data.iloc[screenshot_data['rmse_snapshot_0'].argmin()][
+                'rmse_snapshot_0'
+            ],
         },
         index=[0],
     )
@@ -89,6 +96,9 @@ def process_zoom_levels(*, trace_events, screenshot_data, zoom_level):
         action_data.loc[ind, 'action_end_time'] = markers[
             markers['name'] == f'benchmark-zoom_in-level-{ind-1}:end'
         ].iloc[0]['startTime']
+        action_data.loc[ind, 'min_rmse'] = screenshot_data.iloc[
+            screenshot_data[f'rmse_snapshot_{ind}'].argmin()
+        ][f'rmse_snapshot_{ind}']
     action_data['duration'] = action_data['end_time'] - action_data['start_time']
     return action_data
 
@@ -118,6 +128,12 @@ def load_data(*, metadata_path: str, run: int):
         metadata['zoom_level'] = 0
     trace_path = f'{"/".join(metadata_path.split("/")[:-1])}/{metadata["trace_path"]}'
     metadata['full_trace_path'] = trace_path
+    metadata['zarr_version'] = int(metadata['dataset'].split('-')[1][1])
+    metadata['projection'] = int(metadata['dataset'].split('-')[2])
+    metadata['pixels_per_tile'] = int(metadata['dataset'].split('-')[4])
+    metadata['target_chunk_size'] = int(metadata['dataset'].split('-')[5])
+    metadata['shard_orientation'] = metadata['dataset'].split('-')[6]
+    metadata['shard_size'] = int(metadata['dataset'].split('-')[7])
     with fs.open(trace_path) as f:
         trace_events = json.loads(f.read())['traceEvents']
     event_types = [
@@ -161,7 +177,7 @@ def load_snapshots(*, snapshot_path: str):
     else:
         fs = fsspec.filesystem('file')
     with fs.open(snapshot_path) as f:
-        snapshots = pd.read_json(f, orient='index')
+        snapshots = json.loads(f.read())
     return snapshots
 
 
@@ -211,14 +227,6 @@ def create_summary(*, metadata: pd.DataFrame, data: dict, url_filter: str = None
     summary = pd.concat(
         [pd.DataFrame(metadata, index=[0])] * (metadata['zoom_level'] + 1), ignore_index=True
     )
-    summary['metadata_path'] = metadata['metadata_path']
-    summary['trace_path'] = metadata['trace_path']
-    summary['zarr_version'] = summary['dataset'].apply(lambda x: int(x.split('-')[1][1]))
-    summary['projection'] = summary['dataset'].apply(lambda x: int(x.split('-')[2]))
-    summary['pixels_per_tile'] = summary['dataset'].apply(lambda x: int(x.split('-')[4]))
-    summary['target_chunk_size'] = summary['dataset'].apply(lambda x: int(x.split('-')[5]))
-    summary['shard_orientation'] = summary['dataset'].apply(lambda x: x.split('-')[6])
-    summary['shard_size'] = summary['dataset'].apply(lambda x: int(x.split('-')[7]))
     frames_data = data['frames_data']
     request_data = data['request_data']
 
@@ -256,6 +264,7 @@ def create_summary(*, metadata: pd.DataFrame, data: dict, url_filter: str = None
         if summary.loc[zoom, 'duration'] > metadata['timeout']:
             summary.loc[zoom, 'duration'] = metadata['timeout']
             summary.loc[zoom, 'timeout'] = True
+        summary.loc[zoom, 'min_rmse'] = actions.loc[zoom, 'min_rmse']
         summary.loc[zoom, 'fps'] = len(frames) / (actions.loc[zoom, 'duration'] * 1e-3)
         if requests.empty:
             summary.loc[zoom, 'request_duration'] = 0
