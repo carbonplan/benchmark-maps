@@ -4,10 +4,12 @@ channels:
   - nodefaults
 dependencies:
   - python=3.10
+  - bokeh>=3
   - coiled
   - distributed
   - git
   - hvplot
+  - holoviews
   - pandas
   - pip
   - jupyter
@@ -15,6 +17,7 @@ dependencies:
   - requests
   - rich
   - s3fs
+  - statsmodels
   - typing-extensions
   - universal_pathlib
   - pip:
