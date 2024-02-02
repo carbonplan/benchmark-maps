@@ -1,19 +1,16 @@
-<p align='left'>
-  <a href='https://carbonplan.org/#gh-light-mode-only'>
-    <img
-      src='https://carbonplan-assets.s3.amazonaws.com/monogram/dark-small.png'
-      height='48px'
-    />
-  </a>
-  <a href='https://carbonplan.org/#gh-dark-mode-only'>
-    <img
-      src='https://carbonplan-assets.s3.amazonaws.com/monogram/light-small.png'
-      height='48px'
-    />
-  </a>
+<p align="left" >
+<a href='https://carbonplan.org'>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://carbonplan-assets.s3.amazonaws.com/monogram/light-small.png">
+  <img alt="CarbonPlan monogram." height="48" src="https://carbonplan-assets.s3.amazonaws.com/monogram/dark-small.png">
+</picture>
+</a>
 </p>
 
 # carbonplan / benchmark-maps
+
+[![CI](https://github.com/carbonplan/benchmark-maps/actions/workflows/main.yml/badge.svg)](https://github.com/carbonplan/benchmark-maps/actions/workflows/main.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ## Running the benchmarks
 
@@ -69,8 +66,8 @@ coiled run --gpu --container quay.io/carbonplan/benchmark-maps bash main.sh
 
 ## license
 
-All the code in this repository is [Apache-2.0](https://choosealicense.com/licenses/apache-2.0/) licensed. When possible, the data used by this project is licensed using the [CC-BY-4.0](https://choosealicense.com/licenses/cc-by-4.0/) license. We include attribution and additional license information for third party datasets, and we request that you also maintain that attribution if using this data.
+All the code in this repository is [Apache-2.0](https://choosealicense.com/licenses/apache-2.0/)-licensed. When possible, the data used by this project is licensed using the [CC-BY-4.0](https://choosealicense.com/licenses/cc-by-4.0/) license. We include attribution and additional license information for third party datasets, and we request that you also maintain that attribution if using this data.
 
 ## about us
 
-CarbonPlan is a non-profit organization that uses data and science for climate action. We aim to improve the transparency and scientific integrity of carbon removal and climate solutions through open data and tools. Find out more at [carbonplan.org](https://carbonplan.org/) or get in touch by [opening an issue](https://github.com/carbonplan/offsets-db/issues/new) or [sending us an email](mailto:hello@carbonplan.org).
+CarbonPlan is a nonprofit organization that uses data and science for climate action. We aim to improve the transparency and scientific integrity of carbon removal and climate solutions through open data and tools. Find out more at [carbonplan.org](https://carbonplan.org/) or get in touch by [opening an issue](https://github.com/carbonplan/offsets-db/issues/new) or [sending us an email](mailto:hello@carbonplan.org).
