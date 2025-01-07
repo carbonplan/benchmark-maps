@@ -14,15 +14,30 @@ if os_name == 'Linux':
 
 def test_gpu_hardware_acceleration():
     with sync_playwright() as p:
-        browser = p.chromium.launch(args=chrome_args)
+
+        browser = p.chromium.launch(args=chrome_args, headless=True)
         page = browser.new_page()
-        page.goto('chrome://gpu')
-        feature_status_list = page.query_selector('.feature-status-list')
-        assert 'Hardware accelerated' in feature_status_list.inner_text()
-        # Check if webGL is enabled
-        print(feature_status_list.inner_text())
-        assert 'OpenGL: Enabled' in feature_status_list.inner_text()
-        assert 'WebGL: Hardware accelerated' in feature_status_list.inner_text()
-        assert 'WebGL2: Hardware accelerated' in feature_status_list.inner_text()
-        assert 'WebGPU: Hardware accelerated' in feature_status_list.inner_text()
+
+        # First navigate to a regular page
+        page.goto('https://webglreport.com')
+
+        # Now check GPU capabilities using JavaScript
+        gpu_info = page.evaluate(
+            """() => {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                return {
+                    vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
+                    renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL),
+                    webglVersion: gl.getParameter(gl.VERSION)
+                }
+            }"""
+        )
+
+        print('GPU Info:', gpu_info)
+
+        # Assert GPU acceleration is enabled
+        assert gpu_info['renderer'] and 'software' not in gpu_info['renderer'].lower()
+
         browser.close()

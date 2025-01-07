@@ -38,18 +38,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: set up conda environment
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
           environment-file: binder/environment.yml
           init-shell: >-
             bash
           cache-environment: true
+          cache-downloads: true
           post-cleanup: 'all'
       - name: Install browsers and package
         run: |
-          pip install -e . --no-deps
+          python -m pip install -e . --no-deps
           playwright install
 
       - name: Run tests
         run: |
-          pytest -v -s
+          python -m pytest -v -s
