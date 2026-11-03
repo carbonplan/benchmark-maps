@@ -22,8 +22,7 @@ def test_gpu_hardware_acceleration():
         page.goto('https://webglreport.com')
 
         # Now check GPU capabilities using JavaScript
-        gpu_info = page.evaluate(
-            """() => {
+        gpu_info = page.evaluate("""() => {
                 const canvas = document.createElement('canvas');
                 const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
                 const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
@@ -32,8 +31,7 @@ def test_gpu_hardware_acceleration():
                     renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL),
                     webglVersion: gl.getParameter(gl.VERSION)
                 }
-            }"""
-        )
+            }""")
 
         print('GPU Info:', gpu_info)
 
