@@ -108,11 +108,9 @@ async def run(
     await variable_dropdown.select_option(variable)
 
     await asyncio.gather(
-        page.evaluate(
-            """
+        page.evaluate("""
             () => (window.performance.mark("benchmark-initial-load:start"))
-            """
-        ),
+            """),
         page.focus('.mapboxgl-canvas'),
         page.click('.mapboxgl-canvas'),
     )
@@ -133,21 +131,17 @@ async def run(
             label = f'benchmark-{action}-level-{level}'
             if action == 'zoom_in':
                 await asyncio.gather(
-                    page.evaluate(
-                        f"""
+                    page.evaluate(f"""
                             () => (window.performance.mark("{start_mark}"))
-                        """
-                    ),
+                        """),
                     page.keyboard.press('='),
                 )
 
             elif action == 'zoom_out':
                 await asyncio.gather(
-                    page.evaluate(
-                        f"""
+                    page.evaluate(f"""
                             () => (window.performance.mark("{start_mark}"))
-                        """
-                    ),
+                        """),
                     page.keyboard.press('-'),
                 )
 
